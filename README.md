@@ -4,7 +4,7 @@ This repository describes two techniques for evaluating LLM performance. It also
 
 ## Supervised
 
-There are several test harnesses for LLM evaluation using canned data. The most well known is [HELM](https://crfm.stanford.edu/helm/latest/). However, it's a relatively complex job to [add a new model](https://crfm-helm.readthedocs.io/en/latest/adding_new_models/), and the support for HuggingFace models is [brittle](https://github.com/stanford-crfm/helm/issues/1501).
+There are several test harnesses for LLM evaluation using canned data. The most well known is [HELM](https://crfm.stanford.edu/helm/latest/). 
 
 EleutherAI produces a simpler harness called [lm-eval](https://github.com/EleutherAI/lm-evaluation-harness). It is fairly easy to run locally and completes one scenario in a few hours on a `g4dn.4xlarge` instance. It supports most HuggingFace models out of the box, and while they haven't documented a way to add a new model, it is relatively easy to do so (see this [pull request](https://github.com/EleutherAI/lm-evaluation-harness/pull/562/files)).
 
@@ -19,6 +19,84 @@ This script evaluate Falcon-7B against the _hellaswag_ benchmark.
     python main.py --model hf-causal --model_args pretrained=tiiuae/falcon-7b,trust_remote_code=True --tasks hellaswag --device cuda:0
 
 For this example, Falcon has an accuracy of 57.8%. The equivalent number for llama-7B is 56.4%.
+
+### HELM 
+
+Running HELM takes a few more steps.  First, deploy a `g4dn.12xlarge` EC2 instance using the Deep Learning AMI on Ubuntu 20.04. We use a powerful EC2 instance because we want to run models locally.
+
+Follow these [instructions](https://www.mongodb.com/docs/manual/tutorial/install-mongodb-on-ubuntu/) to set up a local MongoDB instance to use for caching.
+
+Next set up a Conda environment: 
+
+    conda create -n crfm-helm python=3.8 pip
+
+Activate the environment: 
+
+    conda activate crfm-helm
+
+Clone the [main branch](https://github.com/stanford-crfm/helm) to a local directory. We use the main branch because we need the fix that avoids trying to send data to Google's Perspectives API, and that fix was committed in May 2023. The current released version (0.2.2) dates to March.  Go into the cloned repository and run: 
+
+    pip install .
+
+Create a file called `run_specs.conf` with this line:
+
+    entries: [{description: "boolq:model=stanford-crfm/BioMedLM", priority: 1}]
+
+This tells is to run the `boolq` scenario using a model from HuggingFace called `BioMedLM`. This file can contain multiple entries; see [the example](https://github.com/stanford-crfm/helm/blob/main/src/helm/benchmark/presentation/run_specs.conf) for more details.
+
+Now run the benchmark:
+
+    helm-run --conf-paths run_specs.conf --suite v1 --max-eval-instances 1 --local --mongo-uri mongodb://127.0.0.1:27017/helmdb --enable-huggingface-models stanford-crfm/BioMedLM
+
+Note a few command line options:
+
+* `--mongo-uri` provides the connection string for the Mongo database
+* `--enable-huggingface-models` lets us specify any model from the HuggingFace model hub
+
+After the run completes, run this to produce the results:
+
+    helm-summarize --suite v1
+
+And run `helm-server` to get the web UI for browsing the results.
+
+#### Evaluating a local fine-tuned model
+
+If you run a HuggingFace fine-tuning job in SageMaker, you can run HELM against it.
+
+First, download the training model artifact from S3. Expand the artifact into a directory.
+
+    aws s3 cp s3://<model artifact path> .
+    mkdir smmodel
+    cd smmodel
+    tar zxf ../model.tar.gz 
+
+Now create a run configuration that references that model.
+
+    entries: [{description: "mmlu:subject=philosophy,model=huggingface/smmodel", priority: 1}]
+
+Finally, run the evaluation.
+
+    helm-run --conf-paths run_specs.conf --suite v1 --max-eval-instances 1 --local --mongo-uri mongodb://127.0.0.1:27017/helmdb --enable-local-huggingface-models ./smmodel
+
+#### HELM in local mode
+
+Note that HELM normally does not run models locally. It invokes them via an API. For many models you need to provide an API key. If you look at the [model proxy code](https://github.com/stanford-crfm/helm/blob/main/src/helm/proxy/models.py), you can see the list of supported models. For example:
+
+    Model(
+        group="together",
+        name="databricks/dolly-v2-3b",
+        tags=[TEXT_MODEL_TAG, FULL_FUNCTIONALITY_TEXT_MODEL_TAG],
+    ),
+
+The first half of the model name is the organization, `databricks` in this case. In the [auto client code](https://github.com/stanford-crfm/helm/blob/main/src/helm/proxy/clients/auto_client.py), you can see which model client is used for each organization. For example:
+
+    elif organization in ["together", "databricks", "meta", "stabilityai"]:
+        from helm.proxy.clients.together_client import TogetherClient
+        client = TogetherClient(api_key=self.credentials.get("togetherApiKey", None), cache_config=cache_config)
+
+Then in the [clients](https://github.com/stanford-crfm/helm/tree/main/src/helm/proxy/clients) folder you can check for the specific client implementation. The [together client](https://github.com/stanford-crfm/helm/blob/main/src/helm/proxy/clients/together_client.py) uses an API key, so you'd have to sign up and provide that before using these models. 
+
+For that reason, our examples so far used the HuggingFace models, as they run locally on the machine.
 
 ## Unsupervised
 
