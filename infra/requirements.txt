@@ -1,0 +1,6 @@
+# aws-cdk-lib>=2.109.0 for Python 3.12 Lambda runtime, smstudio.domain to be able to set the
+# "StudioWebPortal" user setting to force classic Studio experience
+aws-cdk-lib==2.126.0
+aws-cdk.aws-lambda-python-alpha==2.126.0-alpha.0
+constructs>=10.0.0,<11.0.0
+upsert-slr>=1.0.2,<2

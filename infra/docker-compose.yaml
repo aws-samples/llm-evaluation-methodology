@@ -1,0 +1,29 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+# Docker Compose configuration for developing and testing the prompt engineering app locally
+services:
+  promptapp:
+    build: prompt_app
+    develop:
+      watch:
+        - action: sync+restart
+          path: prompt_app/src
+          target: /usr/src/app
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+      AWS_REGION: ${AWS_REGION}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
+      # Optionally test Cognito auth locally by setting this env var to your deployed Secret name:
+      COGNITO_SECRET_NAME: ${COGNITO_SECRET_NAME}
+      # Flush Python logs immediately without buffering (good for diagnosing crashes, less good for
+      # performance!):
+      PYTHONUNBUFFERED: 1
+    # We don't specify 'platform' because trying to emulate linux/amd64 on Apple silicon doesn't
+    # work properly with Ray
+    ports:
+      - "8501:8501"  # App
+    restart: always
+    shm_size: 2.33gb  # For Ray performance

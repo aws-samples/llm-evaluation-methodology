@@ -1,0 +1,10 @@
+{
+  "editor.defaultFormatter": "ms-python.black-formatter",
+  "python.analysis.extraPaths": [
+    "infra/cdk/smstudio/cr_lambda_common"
+  ],
+  "python.autoComplete.extraPaths": [
+    "infra/cdk/smstudio/cr_lambda_common"
+  ],
+  "python.defaultInterpreterPath": "infra/.venv/bin/python"
+}

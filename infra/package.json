@@ -1,0 +1,35 @@
+{
+  "name": "llm-evaluation-workshop",
+  "version": "0.1.0",
+  "description": "CDK infrastructure for LLM evaluation workshop on AWS",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "cdk:bootstrap": "cdk bootstrap",
+    "dev:app": "docker compose watch",
+    "dev:watchlogs": "while :; do clear; docker compose logs -f; sleep 2; done",
+    "deploy": "npm run login:ecrpublic && cdk deploy --all",
+    "destroy": "cdk destroy --all",
+    "lint": "black ./cdk_src ./prompt_app/src",
+    "login:ecrpublic": "aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Workshop",
+    "LLM",
+    "Generative-AI",
+    "Model-Evaluation",
+    "AWS"
+  ],
+  "author": "Amazon Web Services",
+  "license": "MIT-0",
+  "private": true,
+  "dependencies": {
+    "aws-cdk": "2.126.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

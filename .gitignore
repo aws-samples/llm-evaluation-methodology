@@ -1,0 +1,29 @@
+# Project-specific & data files
+**.tmp.*
+data/
+datasets/*
+!datasets/*.ipynb
+!datasets/question-answering/
+
+# OS
+.DS_Store
+**.swp
+
+# AWS CDK
+cdk.out/
+.cdk.staging
+cdk.context.json
+
+# AWS SAM
+.aws-sam
+
+# Python
+__pycache__
+.pytest_cache
+**.egg-info
+**.pyc
+.ipynb_checkpoints
+.venv/
+
+# NodeJS
+node_modules/

@@ -1,157 +1,114 @@
-# Supervised and unsupervised LLM evaluation
+# Evaluate and compare Large Language Models (LLMs) on AWS
 
-This repository describes two techniques for evaluating LLM performance. It also includes some thoughts on an evaluation methodology.
+As more organizations look to push Generative AI use-cases from initial prototype to production deployment, rigorous testing and evaluation is important to demonstrate robustness, optimize cost, and maximize quality - both before and after initial go-live.
 
-## Supervised
+This repository collects some code samples and deployable components that can help you efficiently evaluate and optimize LLM performance - including how to automate testing to evaluate new models and prompt templates faster.
 
-There are several test harnesses for LLM evaluation using canned data. The most well known is [HELM](https://crfm.stanford.edu/helm/latest/). 
 
-EleutherAI produces a simpler harness called [lm-eval](https://github.com/EleutherAI/lm-evaluation-harness). It is fairly easy to run locally and completes one scenario in a few hours on a `g4dn.4xlarge` instance. It supports most HuggingFace models out of the box, and while they haven't documented a way to add a new model, it is relatively easy to do so (see this [pull request](https://github.com/EleutherAI/lm-evaluation-harness/pull/562/files)).
+## LLM evaluation overview
 
-In order to use Eleuther to test a new model, I followed these steps:
+***Why?*** ▶️ Systematically measuring and comparing the performance of LLMs (and their configurations like prompt templates) is an important step towards building useful and optimized LLM-based solutions. For example:
 
-* Create a new EC2 instance of type `g4dn.4xlarge` using the Deep Learning AMI.
-* Install lm-eval using the instructions on GitHub
-* Run a script to run one model on one scenario.
+- You want to try a smaller, lower-cost model, but are worried about how it performs compared to a larger model.
+- You are trying a new task with your own prompts and data, and want to see how a model performs in that specific scenario.
+- You'd like to engineer better prompts for your use-case, to achieve the best overall performance with your current model.
+- You've built a new version of a model, and want to see if the performance has gone up or down.
 
-This script evaluate Falcon-7B against the _hellaswag_ benchmark.
+***What?*** ▶️ Many factors influence what LLM, prompt templates, and overall solution architecture will be best for a particular use-case, so to inform good decisions your evaluation should consider a range of criteria - like:
 
-    python main.py --model hf-causal --model_args pretrained=tiiuae/falcon-7b,trust_remote_code=True --tasks hellaswag --device cuda:0
+- **Usefulness:** Are the answers/completions the model generates *accurate* and *relevant* to what the users need? Is it prone to *hallucinate* or make mistakes?
+- **Cost:** Is the cost well-aligned and justifiable for the value the solution will generate? What about other solution-dependent costs like the implementation time and effort, or ongoing maintenance if applicable?
+- **Latency:** LLMs require significant computation - how will the model's response speed affect user experience for the use-case?
+- **Robustness:** Does the solution give *unbiased*, *stable and predictable* answers? Does it maintain the right tone and handle unexpected topics as you'd like?
+- **Safety & Security:** Does the overall solution follow security best-practices? Could malicious users persuade the model to expose sensitive information, violate privacy, or generate toxic or inappropriate responses?
 
-For this example, Falcon has an accuracy of 57.8%. The equivalent number for llama-7B is 56.4%.
+***How?*** ▶️ To address this range of considerations, there's a broad spectrum of evaluation patterns and tools you can apply. For example:
 
-### HELM 
+- **Generic vs domain-specific:** Although general-purpose benchmark datasets might give a high-level guide for shortlisting models, task-specific data for your use-case and domain might give very different (and much more relevant) results.
+- **Human vs automated:** While human sponsor users provide a 'gold standard' of accuracy for measuring system usefulness, you might be able to iterate much faster and optimize the solution much further by automating evaluation.
+- **Supervised vs unsupervised:** Even in 'unsupervised' cases where there's no labelled data or human review, it might be possible to define and measure some quality metrics automatically.
+- **LLM-level vs solution-level:** Common solution patterns like [Retrieval-Augmented Generation (RAG)](https://aws.amazon.com/what-is/retrieval-augmented-generation/), [Agents](https://docs.aws.amazon.com/bedrock/latest/userguide/agents.html), and [Guardrails](https://aws.amazon.com/bedrock/guardrails/) combine multiple tools (and perhaps multiple LLM calls) to produce final user-ready responses. LLM call-level evaluations can be useful for optimizing individual steps in these chains, whereas overall solution-level evaluations capture the final end-user experience.
 
-Running HELM takes a few more steps.  First, deploy a `g4dn.12xlarge` EC2 instance using the Deep Learning AMI on Ubuntu 20.04. We use a powerful EC2 instance because we want to run models locally.
 
-Follow these [instructions](https://www.mongodb.com/docs/manual/tutorial/install-mongodb-on-ubuntu/) to set up a local MongoDB instance to use for caching.
+## Getting started
 
-Next set up a Conda environment: 
+To help get your evaluation strategy up and running, this repository includes:
 
-    conda create -n crfm-helm python=3.8 pip
+- A prompt engineering sample app you can deploy in your AWS Account in a region where [Amazon Bedrock](https://aws.amazon.com/bedrock/) is available.
+- Some sample notebooks you'll want to run in an [Amazon SageMaker Studio Domain](https://docs.aws.amazon.com/sagemaker/latest/dg/gs-studio-onboard.html) - ideally in the same region for smoothest experience.
 
-Activate the environment: 
+▶️ **The simplest way to set up** is by [deploying an AWS CloudFormation stack](https://console.aws.amazon.com/cloudformation/home?#/stacks/create) in your target AWS Region, using the template file at [infra/cfn_bootstrap.yaml](infra/cfn_bootstrap.yaml). 
 
-    conda activate crfm-helm
+If you'd like to customize your setup further, check out [infra/README.md](infra/README.md) for further details on configuring and deploying the infrastructure from [AWS CDK](https://aws.amazon.com/cdk/).
 
-Clone the [main branch](https://github.com/stanford-crfm/helm) to a local directory. We use the main branch because we need the fix that avoids trying to send data to Google's Perspectives API, and that fix was committed in May 2023. The current released version (0.2.2) dates to March.  Go into the cloned repository and run: 
 
-    pip install .
+## High-level strategy
 
-Create a file called `run_specs.conf` with this line:
+Maturing your organization's Generative AI / LLM evaluation strategy is an iterative journey and tooling specifics will vary depending on your use-case(s) and constraints. However, a strong LLM evaluation strategy will typically look something like:
 
-    entries: [{description: "boolq:model=stanford-crfm/BioMedLM", priority: 1}]
+1. **Validate the use-case and architecture:** Without a clear, measurable business benefit case it will be difficult to quantify what good looks like, and decide when to go live or stop investing in marginal improvements. Even if the use-case is important to the business, is it a [good fit](https://aws.amazon.com/generative-ai/use-cases/) for generative LLMs?
+2. **Shortlist models:** Identify a shortlist of LLMs that might be a good fit for your architecture and task
+    - Curated catalogs like [Amazon Bedrock](https://aws.amazon.com/bedrock/) provide fully-managed, API-based access to a range of leading foundation models at different price points.
+    - Broader model hubs like [Amazon SageMaker JumpStart](https://docs.aws.amazon.com/sagemaker/latest/dg/jumpstart-foundation-models-choose.html) and the [Hugging Face Model Hub](https://huggingface.co/models) offer a wide selection with easy paths for deployment on pay-as-you-use Cloud infrastructure.
+    - Public leaderboards like [HELM](https://crfm.stanford.edu/helm/latest/?groups=1) and the [Hugging Face Open LLM Leaderboard](https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard) might give useful generic performance indications for models they include - but might be missing some important models or not accurately reflect performance in your specific domain and task.
+    - With automatic model evaluations [for Amazon Bedrock](https://docs.aws.amazon.com/bedrock/latest/userguide/model-evaluation.html) and [for Amazon SageMaker](https://docs.aws.amazon.com/sagemaker/latest/dg/clarify-foundation-model-evaluate.html), you can test Bedrock or SageMaker-deployed foundation models with no coding required.
+3. **Build task-specific dataset(s) early:** Start collecting reference "test case" datasets for your specific use-case as early as possible in the project, to measure LLM quality in the context of what you're actually trying to do.
+    - If your use-case is open-ended like a general-purpose chatbot, try to work with sponsor users to ensure your examples accurately reflect the ways real users will interact with the solution.
+    - Collect *both* the most-likely/most-important cases, as well as *edge cases* your solution will need to handle gracefully.
+    - If you already have an idea of the internal reasoning to answer each test case, collect that to enable component-level testing. For example record which document & page the answer is derived from for RAG use-cases, or which tools should be called for agents.
+    - These datasets can continue to grow and evolve through the project, but will define your baseline for "what good looks like".
+4. **Start to optimize:** With reference to task-specific data, run iterative evaluations to narrow your model shortlist and optimize your prompts and configurations.
+    - Human evaluation jobs [for Amazon Bedrock](https://docs.aws.amazon.com/bedrock/latest/userguide/model-evaluation-type-human-customer.html) and [for Amazon SageMaker](https://docs.aws.amazon.com/sagemaker/latest/dg/clarify-foundation-model-evaluate-human.html) can help share manual validation work across your internal teams or out to external crowd workers, so you can understand performance and iterate faster.
+    - Keep a *holistic* view of performance, accounting for factors like latency, cost, robustness to edge cases, and potential bias - not just accuracy/quality on your target cases.
+5. **Automate to accelerate:** From prompt engineering to inference configuration tuning to evaluating newly-released models, there's just too much work to always test by hand.
+    - Use automatic evaluation tools to measure model/prompt/solution accuracy metrics across your test datasets automatically: Allowing you to test and iterate faster.
+    - *Compare* human and automated evaluations on the same datasets, to *measure* how much trust you can place in automated heuristics aligning with human user preferences.
+    - As you accelerate your pace of iteration and optimization, ensure your infrastructure for version control, tracking dashboards, and (re)-deployments are keeping up.
+6. **Align automated and human metrics:** With the basics of automated evaluation in place and metrics tracking how well your automated tests align to real human evaluations of LLM output quality, you're ready to consider optimizing your automated metrics themselves.
+    - For simple automatic evaluation pipelines, this might be straightforward choices like changing your metric of choice to align to human scores.
+    - For pipelines that use LLMs to evaluate the response of other LLMs, this could include prompt engineering or even fine-tuning your evaluator model to align more closely with the collected human feedback.
 
-This tells is to run the `boolq` scenario using a model from HuggingFace called `BioMedLM`. This file can contain multiple entries; see [the example](https://github.com/stanford-crfm/helm/blob/main/src/helm/benchmark/presentation/run_specs.conf) for more details.
 
-Now run the benchmark:
+## Try out the samples
 
-    helm-run --conf-paths run_specs.conf --suite v1 --max-eval-instances 1 --local --mongo-uri mongodb://127.0.0.1:27017/helmdb --enable-huggingface-models stanford-crfm/BioMedLM
+### Data-driven prompt template engineering
 
-Note a few command line options:
+Once your `LLMEValWKshpStack` stack has created successfully [in AWS CloudFormation](https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/), select it from the list and click through to the *Outputs* tab where you should see:
 
-* `--mongo-uri` provides the connection string for the Mongo database
-* `--enable-huggingface-models` lets us specify any model from the HuggingFace model hub
+- An `AppDomainName` output with a hyperlink like [***.cloudfront.net]()
+- `AppDemoUsername` and `AppDemoPassword` outputs listing the credentials you can use to log in
 
-After the run completes, run this to produce the results:
+Open the demo app and log in with the given credentials to get started.
 
-    helm-summarize --suite v1
+When prompted for a dataset (unless you have your own prepared), upload the sample provided at [datasets/question-answering/qa.manifest.jsonl](datasets/question-answering/qa.manifest.jsonl).
 
-And run `helm-server` to get the web UI for browsing the results.
+> ⚠️ **Warning:** This sample app is provided to illustrate a data-driven prompt engineering workflow with automated model evaluation. It's not recommended for use with highly sensitive data or in production environments. For more information, see the [infra/README.md](infra/README.md).
 
-#### Evaluating a local fine-tuned model
+You'll be able to:
+- Explore the sample dataset by expanding the 'dataset' section
+- Adjust the prompt template (noting the placeholders should match the available dataset columns)
+- Select a target model and evaluation algorithm, and change the expected reference answer field name, in the left sidebar
+- Click 'Start Evaluation' to run an evaluation with the current configuration.
 
-If you run a HuggingFace fine-tuning job in SageMaker, you can run HELM against it.
+Note that in addition to the default `qa_accuracy` evaluation algorithm from `fmeval`, the app provides a custom `qa_accuracy_by_llm` algorithm that uses Anthropic Claude to evaluate the selected model's response - rather than simple heuristics.
 
-First, download the training model artifact from S3. Expand the artifact into a directory.
+To customize and re-deploy this app, or run the container locally, see the documentation in [infra/README.md](infra/README.md).
 
-    aws s3 cp s3://<model artifact path> .
-    mkdir smmodel
-    cd smmodel
-    tar zxf ../model.tar.gz 
 
-Now create a run configuration that references that model.
+### (Notebooks) LLM-based evaluation of LLMs
 
-    entries: [{description: "mmlu:subject=philosophy,model=huggingface/smmodel", priority: 1}]
+For users who are familiar with Python and comfortable running code, we provide two example notebooks for automating LLM evaluation using (other) LLMs:
 
-Finally, run the evaluation.
+- [LLM-Based Critique (Bedrock and fmeval).ipynb](LLM-Based%20Critique%20(Bedrock%20and%20fmeval).ipynb) demonstrates LLM self-evaluation for a supervised, in-context question answering use-case, using models on Amazon Bedrock and orchestrating the process via the [open-source `fmeval` library](https://github.com/aws/fmeval).
+- [LLM-Based Critique (SageMaker and Claude).ipynb](LLM-Based%20Critique%20(SageMaker%20and%20Claude).ipynb) shows LLM-based evaluation for a weakly-supervised, text summarization use-case, using Anthropic Claude on Amazon Bedrock to evaluate open-source models deployed on SageMaker.
 
-    helm-run --conf-paths run_specs.conf --suite v1 --max-eval-instances 1 --local --mongo-uri mongodb://127.0.0.1:27017/helmdb --enable-local-huggingface-models ./smmodel
+These notebooks have been tested on Amazon SageMaker Studio.
 
-#### HELM in local mode
 
-Note that HELM normally does not run models locally. It invokes them via an API. For many models you need to provide an API key. If you look at the [model proxy code](https://github.com/stanford-crfm/helm/blob/main/src/helm/proxy/models.py), you can see the list of supported models. For example:
+## Further reading and tools
 
-    Model(
-        group="together",
-        name="databricks/dolly-v2-3b",
-        tags=[TEXT_MODEL_TAG, FULL_FUNCTIONALITY_TEXT_MODEL_TAG],
-    ),
+- [FMBench](https://github.com/aws-samples/foundation-model-benchmarking-tool) is an open-source Python package from AWS that can help run performance and cost benchmarking of foundation models deployed on Amazon SageMaker and Amazon Bedrock.
 
-The first half of the model name is the organization, `databricks` in this case. In the [auto client code](https://github.com/stanford-crfm/helm/blob/main/src/helm/proxy/clients/auto_client.py), you can see which model client is used for each organization. For example:
-
-    elif organization in ["together", "databricks", "meta", "stabilityai"]:
-        from helm.proxy.clients.together_client import TogetherClient
-        client = TogetherClient(api_key=self.credentials.get("togetherApiKey", None), cache_config=cache_config)
-
-Then in the [clients](https://github.com/stanford-crfm/helm/tree/main/src/helm/proxy/clients) folder you can check for the specific client implementation. The [together client](https://github.com/stanford-crfm/helm/blob/main/src/helm/proxy/clients/together_client.py) uses an API key, so you'd have to sign up and provide that before using these models. 
-
-For that reason, our examples so far used the HuggingFace models, as they run locally on the machine.
-
-## Unsupervised
-
-In cases where we don't have labeled ground truth data, we need an unsupervised technique. One option is to use a high quality reference model as an evaluator. The evaluator judges how well two or more other models perform. This technique is inspired by two papers:
-
-* [G-Eval](https://arxiv.org/abs/2303.16634)
-* [LMExam](https://lmexam.com/)
-
-The notebook `llm-unsupervised-eval.ipynb` shows a simple example of this approach. It uses Claude as the evaluator to judge the performance of Falcon 40B and Flan T5 XL models. The task is to summarize news articles from `cnn-dailymail` dataset. 
-
-We give the evaluator a prompt that lays out the evaluation criteria, and then collect the output scores for comparison. We also had the evaluator look at the ground truth data as a sanity check.
-
-The assumption in this technique is that the evaluator is as good as a human. That's a complex question, but we can satisfy it to some extent by comparing against ground truth data first, and by asking the model to explain its evaluation. (And why don't we just use the higher quality model? Well, we might want a model that's cheaper or tuned to a specific domain.)
-
-## Evaluation methodology
-
-You may wish to compare the performance of two or more LLMs for several reasons:
-
-* You want to try a smaller, lower-cost model, but are worried about how it performs compared to a larger model.
-* You are trying a new task with your own prompts and data, and want to see how a model performs in that specific scenario.
-* You have built a new version of a model using transfer learning and want to see if the performance has gone up or down.
-
-Let's walk through the steps you might take when picking a good model for a use case. 
-
-### Starting from scratch
-
-If you are not sure which models to try for a specific use case, start here. These three steps will help you get to a short list of feasible models.
-
-#### Step 1: Narrow based on task
-
-Use resources like the [HuggingFace model hub](https://huggingface.co/models) and [HELM](https://crfm.stanford.edu/helm/latest/?groups=1) to identify models that can perform the task. Also consider the models available through [SageMaker Jumpstart](https://docs.aws.amazon.com/sagemaker/latest/dg/jumpstart-foundation-models-choose.html) and [Amazon Bedrock](https://aws.amazon.com/bedrock/).
-
-#### Step 2: Consider infrastructure constraints
-
-We won't explore this in detail, but consider what type of GPU you'll need to run a the largest models. That will impact cost and performance.
-
-#### Step 3: Narrow based on public benchmarks
-
-Using public benchmarks like HELM or the HuggingFace [leaderboard](https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard), identify which feasible models rank the best in the benchmarks. Note that not all models are listed in those benchmarks. 
-
-### Final selection from a few candidate models
-
-Once you've identified a few models that seem like a good fit, or if you need to evaluate a new model against one you're currently using, you can follow these additional steps.
-
-#### Step 4: Use a supervised benchmark on new model(s)
-
-Run a supervised tool on the new model(s) of interest using canned data.
-
-#### Step 5: Use an unsupervised benchmark on new model(s).
-
-If you need to test against new data or prompts rather than canned data, use an unsupervised tool.
-
-#### Step 6: Incorporate a supervised or unsupervised tool into the MLOps lifecycle
-
-Remember that you need to constantly evaluate the performance of the model you're using. Collect some percentage of the inputs and outputs from your model, and use human or automated evaluation to measure model quality.
 
 ## Security
 
@@ -159,4 +116,5 @@ See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more inform
 
 ## License
 
-This library is licensed under the MIT-0 License. See the LICENSE file.
+This library is licensed under the MIT-0 License. See the [LICENSE](LICENSE) file. The sample datasets provided in [datasets/question-answering](datasets/question-answering) are transformed subsets of the [Stamford Question Answering Dataset v2.0 dev partition](https://rajpurkar.github.io/SQuAD-explorer/explore/v2.0/dev/) (original available for download [here](https://rajpurkar.github.io/SQuAD-explorer/dataset/dev-v2.0.json)), and are provided under CC-BY-SA-4.0. See the [datasets/question-answering/LICENSE](datasets/question-answering/LICENSE) file.
+
