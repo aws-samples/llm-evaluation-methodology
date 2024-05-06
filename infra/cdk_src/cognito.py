@@ -75,7 +75,8 @@ class UserPoolUser(Construct):
             policy=AwsCustomResourcePolicy.from_sdk_calls(
                 resources=AwsCustomResourcePolicy.ANY_RESOURCE
             ),
-            install_latest_aws_sdk=True,
+            # TODO: Should we re-enable? Disabled for https://github.com/aws/aws-cdk/issues/30067
+            # install_latest_aws_sdk=True,
         )
 
         # Force set the password, to avoid inescapable FORCE_PASSWORD_CHANGE status:
@@ -98,7 +99,8 @@ class UserPoolUser(Construct):
             policy=AwsCustomResourcePolicy.from_sdk_calls(
                 resources=AwsCustomResourcePolicy.ANY_RESOURCE
             ),
-            install_latest_aws_sdk=True,
+            # TODO: Should we re-enable? Disabled for https://github.com/aws/aws-cdk/issues/30067
+            # install_latest_aws_sdk=True,
         )
         set_password_cr.node.add_dependency(create_user_cr)
 
