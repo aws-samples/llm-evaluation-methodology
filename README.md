@@ -37,9 +37,13 @@ To help get your evaluation strategy up and running, this repository includes:
 - A prompt engineering sample app you can deploy in your AWS Account in a region where [Amazon Bedrock](https://aws.amazon.com/bedrock/) is available.
 - Some sample notebooks you'll want to run in an [Amazon SageMaker Studio Domain](https://docs.aws.amazon.com/sagemaker/latest/dg/gs-studio-onboard.html) - ideally in the same region for smoothest experience.
 
-▶️ **The simplest way to set up** is by [deploying an AWS CloudFormation stack](https://console.aws.amazon.com/cloudformation/home?#/stacks/create) in your target AWS Region, using the template file at [infra/cfn_bootstrap.yaml](infra/cfn_bootstrap.yaml). 
+▶️ **The simplest way to set up** is by deploying our S3-hosted AWS CloudFormation template (⚠️ Check the *AWS Region* after following the below link, and switch if needed):
 
-If you'd like to customize your setup further, check out [infra/README.md](infra/README.md) for further details on configuring and deploying the infrastructure from [AWS CDK](https://aws.amazon.com/cdk/).
+[![Launch Stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?#/stacks/create/review?templateURL=https://ws-assets-prod-iad-r-iad-ed304a55c2ca1aee.s3.us-east-1.amazonaws.com/ab6c96d3-53cf-4730-b0fe-f4762dbbb6eb/cfn_bootstrap.yaml&stackName=LLMEvalBootstrap "Launch Stack")
+
+Alternatively, to guarantee you're in sync with the latest code updates, you can download the [infra/cfn_bootstrap.yaml](infra/cfn_bootstrap.yaml) template and then [deploy it from the AWS CloudFormation console](https://console.aws.amazon.com/cloudformation/home?#/stacks/create).
+
+If you'd like to **customize** your setup further, check out [infra/README.md](infra/README.md) for details on how to configure and deploy the infrastructure from the [AWS CDK](https://aws.amazon.com/cdk/) source code.
 
 
 ## High-level strategy
