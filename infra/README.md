@@ -1,8 +1,17 @@
 # LLM Evaluation demo app and workshop infrastructure
 
-This project includes a containerized prompt engineering / evaluation demo app, Python [AWS CDK](https://aws.amazon.com/cdk/) infrastructure-as-code to deploy it, and additional CDK code to deploy an [Amazon SageMaker Studio Domain](https://docs.aws.amazon.com/sagemaker/latest/dg/sm-domain.html) pre-configured ready to use in a guided workshop setting (in case you don't have one already).
+This project includes a containerized prompt engineering / evaluation demo app, infrastructure-as-code to deploy it, and additional code to deploy an [Amazon SageMaker Studio Domain](https://docs.aws.amazon.com/sagemaker/latest/dg/sm-domain.html) pre-configured ready to use in a guided workshop setting (in case you don't have one already).
 
-This guide is intended mainly for developers wishing to understand and customize the provided infrastructure as code. If you just want to deploy it as-is in your AWS Account, consider using the [cfn_bootstrap.yaml](cfn_bootstrap.yaml) template in [AWS CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-create-stack.html).
+This guide is intended mainly for developers wishing to understand and customize the provided infrastructure. If you just want to deploy it as-is in your AWS Account, consider using the [cfn_bootstrap.yaml](cfn_bootstrap.yaml) template in [AWS CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-create-stack.html).
+
+
+## Architecture overview
+
+The demo app is built in Python with [Streamlit](https://streamlit.io/) (see the [prompt_app folder](prompt_app)) and deployed as an [ECS Fargate](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/AWS_Fargate.html) serverless container, behind an [Application Load Balancer](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html) via the [`ApplicationLoadBalancedFargateService` CDK construct](https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ecs_patterns.ApplicationLoadBalancedFargateService.html). Users connect over HTTPS through [Amazon CloudFront](https://aws.amazon.com/cloudfront/), and log in with authentication provided by an [Amazon Cognito User Pool](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-identity-pools.html).
+
+![](images/architecture-overview.png "Architecture overview diagram depicting the above-described chain, with the ECS Fargate app also connecting out to foundation models on either Amazon Bedrock or OpenAI.")
+
+The above infrastructure, and the optional SageMaker Studio Domain deployment, is implemented in and deployed through [AWS CDK for Python](https://aws.amazon.com/cdk/). Since deploying CDK code requires setting up a development environment (as detailed below), we also provide a directly-deployable ["bootstrap" CloudFormation template](cfn_bootstrap.yaml) which fetches this repository and runs the CDK deploment via [AWS CodeBuild](https://aws.amazon.com/codebuild/).
 
 
 ## Important caveats

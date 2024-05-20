@@ -27,3 +27,6 @@ __pycache__
 
 # NodeJS
 node_modules/
+
+# draw.io/diagrams.net
+**.bkp
