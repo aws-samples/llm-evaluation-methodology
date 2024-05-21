@@ -37,7 +37,9 @@ class LLMEValWKshpStack(Stack):
                 vpc=vpc,
                 code_checkout=sagemaker_code_checkout,
                 code_repo=sagemaker_code_repo,
+                create_nbi=False,  # Don't create a 'Notebook Instance' (save costs, use Studio)
                 instance_type="ml.t3.large",
+                studio_classic=False,  # Keep SMStudio classic disabled (save costs)
             )
 
         if deploy_prompt_app:

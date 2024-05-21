@@ -4,7 +4,7 @@
 """
 # Python Built-Ins:
 import os
-from typing import Optional
+from typing import Literal, Optional
 
 # External Dependencies:
 from aws_cdk import aws_ec2, aws_efs, aws_iam, CfnParameter, Stack
@@ -30,8 +30,8 @@ class WorkshopSageMakerEnvironment(Construct):
     """CDK construct for a basic SageMaker Studio domain for demos and workshops"""
 
     _execution_role: aws_iam.IRole
-    notebook_instance: sagemaker_cdk.CfnNotebookInstance
-    stack_param_notebook_name: CfnParameter
+    notebook_instance: Optional[sagemaker_cdk.CfnNotebookInstance]
+    stack_param_notebook_name: Optional[CfnParameter]
 
     def __init__(
         self,
@@ -40,11 +40,12 @@ class WorkshopSageMakerEnvironment(Construct):
         vpc: aws_ec2.IVpc,
         code_checkout: Optional[str] = None,
         code_repo: Optional[str] = None,
+        create_nbi: bool = True,
         create_service_roles: bool = False,
         enable_sm_projects: bool = True,
         execution_role: Optional[aws_iam.IRole] = None,
-        force_studio_classic: bool = False,
         instance_type: str = "ml.t3.medium",
+        studio_classic: Literal["enable", "force", False] = False,
     ):
         """Create a WorkshopSageMakerEnvironment
 
@@ -63,6 +64,9 @@ class WorkshopSageMakerEnvironment(Construct):
             the default branch (usuall `main`). Could also be set to e.g. a commit hash.
         code_repo :
             Optional `git clone`able repository of code to copy in to SageMaker user's environment
+        create_nbi :
+            If set `False`, neither the classic `notebook_instance` nor its associated Lifecycle
+            Configuration Script will be created: Users will need to use SM Studio.
         create_service_roles :
             Set `True` to create required AWS Service Roles for Amazon SageMaker Projects - which
             may fail to deploy if your AWS Account already contains them.
@@ -73,10 +77,11 @@ class WorkshopSageMakerEnvironment(Construct):
         execution_role :
             Optional custom SageMaker Execution Role to assign to users. By default, a
             `.iam.WorkshopSageMakerExecutionRole` will be created automatically.
-        force_studio_classic :
-            By default, domain users will see the new (2023-12 re:Invent) SageMaker Studio
-            experience. Set `True` to force the classic (JupyterLab-based) experience instead as
-            described here:
+        studio_classic :
+            If `False`, SageMaker Studio Classic LCCs and apps will not be created. If 'enable',
+            the environment will be set up for both classic and new (2023-12 re:Invent) Studio. If
+            'force', force the classic (JupyterLab-based) experience instead as described in the
+            below link, and skip creating the new-Studio resources and LCCs.
             https://docs.aws.amazon.com/sagemaker/latest/dg/studio-updated-migrate.html#studio-updated-migrate-revert
         instance_type :
             Instance type to use for SageMaker notebooks (same across Studio and NBIs)
@@ -101,7 +106,7 @@ class WorkshopSageMakerEnvironment(Construct):
         self._execution_role = execution_role
 
         domain_user_settings = {"ExecutionRole": self._execution_role.role_arn}
-        if force_studio_classic:
+        if studio_classic == "force":
             domain_user_settings["StudioWebPortal"] = "DISABLED"
 
         # Although SageMakerStudioDomain supports auto-detecting vpc_id and subnet_ids and
@@ -148,35 +153,42 @@ class WorkshopSageMakerEnvironment(Construct):
             self, "StudioLCCProvider", smcr_helper_layer=smcr_helper_layer
         )
 
-        with open(
-            os.path.join(os.path.dirname(__file__), "lcc", "studio-classic-onstart.sh")
-        ) as fclassic:
-            studio_classic_lcc = SageMakerStudioLifecycleConfig(
-                self,
-                "StudioClassicLCC",
-                app_type="JupyterServer",
-                content=fclassic,
-                domain_id=studio_domain.domain_id,
-                name="workshop-dev-features",
-                provider=studio_lcc_provider,
-            )
+        if studio_classic:
+            with open(
+                os.path.join(os.path.dirname(__file__), "lcc", "studio-classic-onstart.sh")
+            ) as fclassic:
+                studio_classic_lcc = SageMakerStudioLifecycleConfig(
+                    self,
+                    "StudioClassicLCC",
+                    app_type="JupyterServer",
+                    content=fclassic,
+                    domain_id=studio_domain.domain_id,
+                    name="workshop-dev-features",
+                    provider=studio_lcc_provider,
+                )
+        else:
+            studio_classic_lcc = None
 
-        with open(
-            os.path.join(os.path.dirname(__file__), "lcc", "studio-jupyterlab-onstart.sh")
-        ) as fstudio:
-            # TODO: This doesn't provide commit hash flexibility like the classic one does
-            content = fstudio.read().replace(
-                "{{CODE_REPO}}", f"-b {code_checkout} {code_repo}" if code_checkout else code_repo
-            )
-            studio_jlab_lcc = SageMakerStudioLifecycleConfig(
-                self,
-                "StudioLCC",
-                app_type="JupyterLab",
-                content=content,
-                domain_id=studio_domain.domain_id,
-                name="workshop-code",
-                provider=studio_lcc_provider,
-            )
+        if studio_classic == "force":
+            studio_jlab_lcc = None
+        else:
+            with open(
+                os.path.join(os.path.dirname(__file__), "lcc", "studio-jupyterlab-onstart.sh")
+            ) as fstudio:
+                # TODO: This doesn't provide commit hash flexibility like the classic one does
+                content = fstudio.read().replace(
+                    "{{CODE_REPO}}",
+                    f"-b {code_checkout} {code_repo}" if code_checkout else code_repo,
+                )
+                studio_jlab_lcc = SageMakerStudioLifecycleConfig(
+                    self,
+                    "StudioLCC",
+                    app_type="JupyterLab",
+                    content=content,
+                    domain_id=studio_domain.domain_id,
+                    name="workshop-code",
+                    provider=studio_lcc_provider,
+                )
 
         studio_user = SageMakerStudioUser(
             self,
@@ -184,124 +196,131 @@ class WorkshopSageMakerEnvironment(Construct):
             app_arn_map=app_region_map,
             domain_id=studio_domain.domain_id,
             role_arn=self._execution_role.role_arn,
-            lcc_classic_arn=studio_classic_lcc.arn,
-            lcc_jupyterlab_arn=studio_jlab_lcc.arn,
+            lcc_classic_arn=None if studio_classic_lcc is None else studio_classic_lcc.arn,
+            lcc_jupyterlab_arn=None if studio_jlab_lcc is None else studio_jlab_lcc.arn,
             name="workshop-user",
             smcr_helper_layer=smcr_helper_layer,
         )
 
-        user_content = SageMakerStudioUserSetup(
-            self,
-            "StudioUserContent",
-            domain_id=studio_domain.domain_id,
-            efs_file_system=studio_efs,
-            efs_security_group=studio_efs_outbound_sg,
-            enable_projects=enable_sm_projects,
-            git_checkout=code_checkout,
-            git_repository=code_repo,
-            home_efs_file_system_uid=studio_user.home_efs_file_system_uid,
-            smcr_helper_layer=smcr_helper_layer,
-            user_profile_name=studio_user.name,
-            vpc=vpc,
-            vpc_subnets=aws_ec2.SubnetSelection(subnets=admin_subnets),
-        )
+        if studio_classic:
+            user_content = SageMakerStudioUserSetup(
+                self,
+                "StudioUserContent",
+                domain_id=studio_domain.domain_id,
+                efs_file_system=studio_efs,
+                efs_security_group=studio_efs_outbound_sg,
+                enable_projects=enable_sm_projects,
+                git_checkout=code_checkout,
+                git_repository=code_repo,
+                home_efs_file_system_uid=studio_user.home_efs_file_system_uid,
+                smcr_helper_layer=smcr_helper_layer,
+                user_profile_name=studio_user.name,
+                vpc=vpc,
+                vpc_subnets=aws_ec2.SubnetSelection(subnets=admin_subnets),
+            )
 
-        # Pre-warm the JupyterServer app to make initially opening Studio faster for participants:
-        classic_jupyter_app = sagemaker_cdk.CfnApp(
-            self,
-            "SMJupyterApp",
-            app_name="default",
-            app_type="JupyterServer",
-            domain_id=studio_domain.domain_id,
-            user_profile_name=studio_user.name,
-        )
-        classic_jupyter_app.node.add_dependency(studio_user)
+            # Pre-warm the JupyterServer app to make initially opening Studio faster:
+            classic_jupyter_app = sagemaker_cdk.CfnApp(
+                self,
+                "SMJupyterApp",
+                app_name="default",
+                app_type="JupyterServer",
+                domain_id=studio_domain.domain_id,
+                user_profile_name=studio_user.name,
+            )
+            classic_jupyter_app.node.add_dependency(studio_user)
 
-        # Pre-warm the Data Science 3.0 kernel to make first exercise start-up faster:
-        classic_dsci3_app = sagemaker_cdk.CfnApp(
-            self,
-            "SMDataScience3App",
-            app_name=f"instance-prewarm-datascience3-{instance_type.replace('.', '-')}",
-            app_type="KernelGateway",
-            domain_id=studio_domain.domain_id,
-            resource_spec=sagemaker_cdk.CfnApp.ResourceSpecProperty(
+            # Pre-warm the Data Science 3.0 kernel for faster start-up:
+            classic_dsci3_app = sagemaker_cdk.CfnApp(
+                self,
+                "SMDataScience3App",
+                app_name=f"instance-prewarm-datascience3-{instance_type.replace('.', '-')}",
+                app_type="KernelGateway",
+                domain_id=studio_domain.domain_id,
+                resource_spec=sagemaker_cdk.CfnApp.ResourceSpecProperty(
+                    instance_type=instance_type,
+                    sage_maker_image_arn=app_region_map.find_in_map(stack.region, "datascience3"),
+                ),
+                user_profile_name=studio_user.name,
+            )
+            classic_dsci3_app.node.add_dependency(studio_user)
+
+            # Pre-warm the Data Science 2.0 kernel for faster start-up:
+            classic_dsci2_app = sagemaker_cdk.CfnApp(
+                self,
+                "SMDataScience2App",
+                app_name=f"instance-prewarm-datascience2-{instance_type.replace('.', '-')}",
+                app_type="KernelGateway",
+                domain_id=studio_domain.domain_id,
+                resource_spec=sagemaker_cdk.CfnApp.ResourceSpecProperty(
+                    instance_type=instance_type,
+                    sage_maker_image_arn=app_region_map.find_in_map(stack.region, "datascience2"),
+                ),
+                user_profile_name=studio_user.name,
+            )
+            classic_dsci2_app.node.add_dependency(studio_user)
+
+        if studio_classic != "force":
+            # TODO: Remove workarounds when CfnSpace construct is updated in CDK
+            # https://github.com/aws/aws-cdk/issues/28985
+            personal_space = sagemaker_cdk.CfnSpace(
+                self,
+                "PersonalSpace",
+                domain_id=studio_domain.domain_id,
+                space_name=studio_user.name + "-space",
+            )
+            personal_space.add_override("Properties.SpaceSettings.AppType", "JupyterLab")
+            # TODO: This does not actually pre-clone the repo... Need to do something else.
+            personal_space.add_override(
+                # Although the documentation page lists a `.0.` notation:
+                # https://docs.aws.amazon.com/cdk/v2/guide/cfn_layer.html#cfn_layer_raw
+                # ...It doesn't work for adding new arrays: Renders to {"0": "..."}
+                "Properties.SpaceSettings.JupyterLabAppSettings.CodeRepositories",
+                [{"RepositoryUrl": code_repo}],
+            )
+            personal_space.add_override(
+                "Properties.SpaceSettings.JupyterLabAppSettings.DefaultResourceSpec.InstanceType",
+                instance_type,
+            )
+            personal_space.add_override(
+                "Properties.SpaceSettings.SpaceStorageSettings.EbsStorageSettings.EbsVolumeSizeInGb",
+                10,
+            )
+            personal_space.add_override(
+                "Properties.OwnershipSettings.OwnerUserProfileName", studio_user.name
+            )
+            personal_space.add_override("Properties.SpaceSharingSettings.SharingType", "Private")
+            # We can't "start" this space (by creating an "app" for it) because AWS::SageMaker::App
+            # doesn't support new-style JupyterLab spaces at the time of writing (unlike the
+            # CreateApp API)
+            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-sagemaker-app.html
+            # https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_CreateApp.html
+
+        if create_nbi:
+            # Classic Notebook Instance as a fallback:
+            self.stack_param_notebook_name = CfnParameter(
+                self,
+                "NotebookName",
+                default="LLMEvalNotebook",
+                description="Enter the name of the SageMaker notebook instance. Default is LLMEvalNotebook.",
+                type="String",
+            )
+
+            with open(os.path.join(os.path.dirname(__file__), "lcc", "nbi-onstart.sh")) as fnbi:
+                nbi_lcc = SageMakerNotebookLifecycleConfig(self, "NBILCC", on_start_script=fnbi)
+            self.notebook_instance = sagemaker_cdk.CfnNotebookInstance(
+                self,
+                "NotebookInstance",
                 instance_type=instance_type,
-                sage_maker_image_arn=app_region_map.find_in_map(stack.region, "datascience3"),
-            ),
-            user_profile_name=studio_user.name,
-        )
-        classic_dsci3_app.node.add_dependency(studio_user)
-
-        # ...Also the Data Science 2.0 kernel, for Autopilot exercise:
-        classic_dsci2_app = sagemaker_cdk.CfnApp(
-            self,
-            "SMDataScience2App",
-            app_name=f"instance-prewarm-datascience2-{instance_type.replace('.', '-')}",
-            app_type="KernelGateway",
-            domain_id=studio_domain.domain_id,
-            resource_spec=sagemaker_cdk.CfnApp.ResourceSpecProperty(
-                instance_type=instance_type,
-                sage_maker_image_arn=app_region_map.find_in_map(stack.region, "datascience2"),
-            ),
-            user_profile_name=studio_user.name,
-        )
-        classic_dsci2_app.node.add_dependency(studio_user)
-
-        # TODO: Remove workarounds when CfnSpace construct is updated in CDK
-        # https://github.com/aws/aws-cdk/issues/28985
-        personal_space = sagemaker_cdk.CfnSpace(
-            self,
-            "PersonalSpace",
-            domain_id=studio_domain.domain_id,
-            space_name=studio_user.name + "-space",
-        )
-        personal_space.add_override("Properties.SpaceSettings.AppType", "JupyterLab")
-        # TODO: This does not actually pre-clone the repo... Need to do something else.
-        personal_space.add_override(
-            # Although the documentation page lists a `.0.` notation:
-            # https://docs.aws.amazon.com/cdk/v2/guide/cfn_layer.html#cfn_layer_raw
-            # ...It doesn't work for adding new arrays: Renders to {"0": "..."}
-            "Properties.SpaceSettings.JupyterLabAppSettings.CodeRepositories",
-            [{"RepositoryUrl": code_repo}],
-        )
-        personal_space.add_override(
-            "Properties.SpaceSettings.JupyterLabAppSettings.DefaultResourceSpec.InstanceType",
-            instance_type,
-        )
-        personal_space.add_override(
-            "Properties.SpaceSettings.SpaceStorageSettings.EbsStorageSettings.EbsVolumeSizeInGb", 10
-        )
-        personal_space.add_override(
-            "Properties.OwnershipSettings.OwnerUserProfileName", studio_user.name
-        )
-        personal_space.add_override("Properties.SpaceSharingSettings.SharingType", "Private")
-        # We can't "start" this space (by creating an "app" for it) because AWS::SageMaker::App
-        # doesn't support new-style JupyterLab spaces at the time of writing (unlike the CreateApp
-        # API)
-        # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-sagemaker-app.html
-        # https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_CreateApp.html
-
-        # Classic Notebook Instance as a fallback:
-        self.stack_param_notebook_name = CfnParameter(
-            self,
-            "NotebookName",
-            default="LLMEvalNotebook",
-            description="Enter the name of the SageMaker notebook instance. Default is LLMEvalNotebook.",
-            type="String",
-        )
-
-        with open(os.path.join(os.path.dirname(__file__), "lcc", "nbi-onstart.sh")) as fnbi:
-            nbi_lcc = SageMakerNotebookLifecycleConfig(self, "NBILCC", on_start_script=fnbi)
-        self.notebook_instance = sagemaker_cdk.CfnNotebookInstance(
-            self,
-            "NotebookInstance",
-            instance_type=instance_type,
-            lifecycle_config_name=nbi_lcc.name,
-            notebook_instance_name=self.stack_param_notebook_name.value_as_string,
-            platform_identifier="notebook-al2-v2",
-            role_arn=self._execution_role.role_arn,
-            volume_size_in_gb=20,
-        )
+                lifecycle_config_name=nbi_lcc.name,
+                notebook_instance_name=self.stack_param_notebook_name.value_as_string,
+                platform_identifier="notebook-al2-v2",
+                role_arn=self._execution_role.role_arn,
+                volume_size_in_gb=20,
+            )
+        else:
+            self.stack_param_notebook_name = None
+            self.notebook_instance = None
 
     @property
     def execution_role(self) -> WorkshopSageMakerExecutionRole:
