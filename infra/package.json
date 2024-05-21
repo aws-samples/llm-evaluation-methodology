@@ -12,8 +12,11 @@
     "dev:watchlogs": "while :; do clear; docker compose logs -f; sleep 2; done",
     "deploy": "npm run login:ecrpublic && cdk deploy --all",
     "destroy": "cdk destroy --all",
-    "lint": "black ./cdk_src ./prompt_app/src",
+    "lint:cfn": "cfn-lint cfn_bootstrap.yaml",
+    "lint:python": "black ./cdk_src ./prompt_app/src",
+    "lint": "npm run lint:cfn && npm run lint:python",
     "login:ecrpublic": "aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws",
+    "scan:cfn": "cfn_nag_scan --input-path cfn_bootstrap.yaml",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [

@@ -41,7 +41,9 @@ To help get your evaluation strategy up and running, this repository includes:
 
 [![Launch Stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?#/stacks/create/review?templateURL=https://ws-assets-prod-iad-r-iad-ed304a55c2ca1aee.s3.us-east-1.amazonaws.com/ab6c96d3-53cf-4730-b0fe-f4762dbbb6eb/cfn_bootstrap.yaml&stackName=LLMEvalBootstrap "Launch Stack")
 
-Alternatively, to guarantee you're in sync with the latest code updates, you can download the [infra/cfn_bootstrap.yaml](infra/cfn_bootstrap.yaml) template and then [deploy it from the AWS CloudFormation console](https://console.aws.amazon.com/cloudformation/home?#/stacks/create).
+Alternatively, to guarantee you're in sync with the latest code updates, you can download the template from [infra/cfn_bootstrap.yaml](infra/cfn_bootstrap.yaml) and then [deploy it from the AWS CloudFormation console](https://console.aws.amazon.com/cloudformation/home?#/stacks/create).
+
+> ⚠️ **Note:** The above CloudFormation stacks create an AWS CodeBuild Project with broad IAM permissions to deploy the solution on your behalf. They're not recommended for use in production-environments where [least-privilege principles](https://aws.amazon.com/blogs/security/techniques-for-writing-least-privilege-iam-policies/) should be followed.
 
 If you'd like to **customize** your setup further, check out [infra/README.md](infra/README.md) for details on how to configure and deploy the infrastructure from the [AWS CDK](https://aws.amazon.com/cdk/) source code.
 
