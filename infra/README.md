@@ -22,6 +22,8 @@ The data-driven prompt engineering app is provided as a basic example of how aut
 2. We provide a Python ["data model"](prompt_app/src/datamodel) that attempts to describe sensible abstractions for configuration management of e.g. models, inference parameters, prompt templates, etc... But haven't yet implemented persistent storage for these objects. A fully-featured solution could consider NoSQL storage options like Amazon DynamoDB.
 3. Although Streamlit is useful for quick UI prototyping with teams familiar with Python, it's not a fully-featured web UI development framework. Before investing in building more advanced UI features and workflow improvements, consider whether your long-term requirements would merit switching to something else.
 
+For a detailed list of other security configurations you might want to optimize before using the stack in prodution, you can enable [cdk-nag](https://github.com/cdklabs/cdk-nag) by running the build with the `CDK_NAG=true` environment variable or editing the defaults in [cdk_app.py](cdk_app.py). You don't need to request stack deployment to complete this analysis: running `npx cdk synth` would show the same error list.
+
 
 ## Development environment pre-requisites
 
