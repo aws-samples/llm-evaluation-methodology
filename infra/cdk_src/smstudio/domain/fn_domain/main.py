@@ -48,6 +48,7 @@ import boto3
 
 # Local Dependencies:
 from cfn import CustomResourceEvent, CustomResourceRequestType, parse_cfn_boolean
+from sagemaker_util import retry_if_already_updating
 import vpctools
 
 logger = logging.getLogger("main")
@@ -317,9 +318,11 @@ def delete_domain(domain_id: str):
 
 
 def update_domain(domain_id: str, default_user_settings):
-    response = smclient.update_domain(
-        DomainId=domain_id,
-        DefaultUserSettings=default_user_settings,
+    retry_if_already_updating(
+        lambda: smclient.update_domain(
+            DomainId=domain_id,
+            DefaultUserSettings=default_user_settings,
+        ),
     )
     updated = False
     time.sleep(0.5)
