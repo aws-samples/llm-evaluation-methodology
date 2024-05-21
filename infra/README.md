@@ -2,16 +2,16 @@
 
 This project includes a containerized prompt engineering / evaluation demo app, infrastructure-as-code to deploy it, and additional code to deploy an [Amazon SageMaker Studio Domain](https://docs.aws.amazon.com/sagemaker/latest/dg/sm-domain.html) pre-configured ready to use in a guided workshop setting (in case you don't have one already).
 
-This guide is intended mainly for developers wishing to understand and customize the provided infrastructure. If you just want to deploy it as-is in your AWS Account, consider using the [cfn_bootstrap.yaml](cfn_bootstrap.yaml) template in [AWS CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-create-stack.html).
-
 
 ## Architecture overview
 
-The demo app is built in Python with [Streamlit](https://streamlit.io/) (see the [prompt_app folder](prompt_app)) and deployed as an [ECS Fargate](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/AWS_Fargate.html) serverless container, behind an [Application Load Balancer](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html) via the [`ApplicationLoadBalancedFargateService` CDK construct](https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ecs_patterns.ApplicationLoadBalancedFargateService.html). Users connect over HTTPS through [Amazon CloudFront](https://aws.amazon.com/cloudfront/), and log in with authentication provided by an [Amazon Cognito User Pool](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-identity-pools.html).
+The demo app is built in Python with [Streamlit](https://streamlit.io/) (see the [prompt_app folder](prompt_app)) and deployed as an [ECS Fargate](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/AWS_Fargate.html) serverless container, behind an [Application Load Balancer](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html) (via the [`ApplicationLoadBalancedFargateService` CDK construct](https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ecs_patterns.ApplicationLoadBalancedFargateService.html)). Users connect over HTTPS through [Amazon CloudFront](https://aws.amazon.com/cloudfront/), and log in with authentication provided by an [Amazon Cognito User Pool](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-identity-pools.html).
 
 ![](images/architecture-overview.png "Architecture overview diagram depicting the above-described chain, with the ECS Fargate app also connecting out to foundation models on either Amazon Bedrock or OpenAI.")
 
 The above infrastructure, and the optional SageMaker Studio Domain deployment, is implemented in and deployed through [AWS CDK for Python](https://aws.amazon.com/cdk/). Since deploying CDK code requires setting up a development environment (as detailed below), we also provide a directly-deployable ["bootstrap" CloudFormation template](cfn_bootstrap.yaml) which fetches this repository and runs the CDK deploment via [AWS CodeBuild](https://aws.amazon.com/codebuild/).
+
+> ⚠️ **Note:** The above CloudFormation template creates an AWS CodeBuild Project with broad IAM permissions to deploy the solution on your behalf. It's not recommended for use in production-environments where [least-privilege principles](https://aws.amazon.com/blogs/security/techniques-for-writing-least-privilege-iam-policies/) should be followed.
 
 
 ## Important caveats
@@ -21,6 +21,8 @@ The data-driven prompt engineering app is provided as a basic example of how aut
 1. Although each user's session state is not shared with others, the application does not implement full multi-user management with configurable permissions and sharing. Local temporary files are used for manipulating uploaded datasets on the containerized service, and may cause unexpected behaviour or resource exhaustion with multiple concurrent users.
 2. We provide a Python ["data model"](prompt_app/src/datamodel) that attempts to describe sensible abstractions for configuration management of e.g. models, inference parameters, prompt templates, etc... But haven't yet implemented persistent storage for these objects. A fully-featured solution could consider NoSQL storage options like Amazon DynamoDB.
 3. Although Streamlit is useful for quick UI prototyping with teams familiar with Python, it's not a fully-featured web UI development framework. Before investing in building more advanced UI features and workflow improvements, consider whether your long-term requirements would merit switching to something else.
+
+For a detailed list of other security configurations you might want to optimize before using the stack in prodution, you can enable [cdk-nag](https://github.com/cdklabs/cdk-nag) by running the build with the `CDK_NAG=true` environment variable or editing the defaults in [cdk_app.py](cdk_app.py). You don't need to request stack deployment to complete this analysis: running `npx cdk synth` would show the same error list.
 
 
 ## Development environment pre-requisites

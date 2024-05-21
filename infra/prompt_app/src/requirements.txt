@@ -1,4 +1,4 @@
-fmeval==1.0.0
+fmeval>=1.0.3,<1.1
 # Explicit pandas v for: https://github.com/ray-project/ray/issues/42572
 # https://discuss.ray.io/t/pandas-importerror-with-ray-data-dataset-show/13486
 pandas<2.2.0

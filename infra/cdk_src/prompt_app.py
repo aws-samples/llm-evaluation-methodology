@@ -88,10 +88,11 @@ class PromptEngineeringApp(Construct):
             cognito_user_pool = cognito.UserPool(
                 self,
                 "UserPool",
+                advanced_security_mode=cognito.AdvancedSecurityMode.ENFORCED,
+                removal_policy=RemovalPolicy.DESTROY,
                 self_sign_up_enabled=False,
                 sign_in_aliases=cognito.SignInAliases(username=True, email=True),
                 sign_in_case_sensitive=False,
-                removal_policy=RemovalPolicy.DESTROY,
             )
         self._cognito_user_pool = cognito_user_pool
         user_pool_client = cognito.UserPoolClient(

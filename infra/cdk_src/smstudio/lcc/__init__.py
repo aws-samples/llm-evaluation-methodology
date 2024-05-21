@@ -69,12 +69,12 @@ class SageMakerNotebookLifecycleConfig(Construct):
             self,
             id,
             notebook_instance_lifecycle_config_name=name,  # (Name prop is mandatory)
-            on_create=[self._script_to_lcc_hook_property(on_create_script)]
-            if on_create_script
-            else None,
-            on_start=[self._script_to_lcc_hook_property(on_start_script)]
-            if on_start_script
-            else None,
+            on_create=(
+                [self._script_to_lcc_hook_property(on_create_script)] if on_create_script else None
+            ),
+            on_start=(
+                [self._script_to_lcc_hook_property(on_start_script)] if on_start_script else None
+            ),
         )
 
     @staticmethod

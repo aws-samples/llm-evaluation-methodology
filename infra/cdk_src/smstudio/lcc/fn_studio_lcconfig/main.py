@@ -18,7 +18,7 @@ from __future__ import annotations
 import json
 import logging
 import time
-from typing import Callable, Optional, TypeVar
+from typing import Optional
 
 logging.getLogger().setLevel(logging.INFO)  # Set log level for AWS Lambda *BEFORE* other imports
 
@@ -27,6 +27,7 @@ import boto3
 
 # Local Dependencies
 from cfn import CustomResourceEvent, CustomResourceRequestType
+from sagemaker_util import retry_if_already_updating
 
 logger = logging.getLogger("main")
 smclient = boto3.client("sagemaker")
@@ -258,19 +259,3 @@ def remove_lcc_from_domain(domain_id: str, script_arn: str, app_type: str):
         time.sleep(10)
     else:
         logger.info("Script already deleted from domain:\n{script_arn}")
-
-
-TResponse = TypeVar("TResponse")
-
-
-def retry_if_already_updating(fn: Callable[[], TResponse], delay_secs: float = 10) -> TResponse:
-    while True:
-        try:
-            return fn()
-        except smclient.exceptions.ClientError as err:
-            if "is already being updated" in err.response["Error"]["Message"]:
-                logger.info("Domain already updating - waiting to retry...")
-                time.sleep(delay_secs)
-                continue
-            else:
-                raise err
