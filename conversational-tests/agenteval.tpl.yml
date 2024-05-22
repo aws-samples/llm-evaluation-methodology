@@ -1,0 +1,28 @@
+evaluator:
+  model: claude-3
+target:
+  type: bedrock-knowledgebase
+  model_id: ${kb_model_id}
+  knowledge_base_id: ${kb_id}
+
+tests:
+  normandy_country:
+    steps:
+    - Ask the agent what country Normandy is located in
+    initial_prompt: In what country is Normandy located?
+    expected_results:
+    - The agent says Normandy is in France
+
+  amazon_followup:
+    steps:
+    - Ask the agent how big the Amazon rainforest is
+    - Ask the agent the exact question "how many trees are in it?"
+    expected_results:
+    - The agent says the rainforest is 5,500,000 square kilometres
+    - The agent says 390 billion trees
+
+  aws_lambda_noanswer:
+    steps:
+    - Ask the agent what the maximum time-out for a function in AWS Lambda is
+    expected_results:
+    - The agent declines to answer the question

@@ -101,12 +101,14 @@ Note that in addition to the default `qa_accuracy` evaluation algorithm from `fm
 To customize and re-deploy this app, or run the container locally, see the documentation in [infra/README.md](infra/README.md).
 
 
-### (Notebooks) LLM-based evaluation of LLMs
+### Example notebooks
 
-For users who are familiar with Python and comfortable running code, we provide two example notebooks for automating LLM evaluation using (other) LLMs:
+For users who are familiar with Python and comfortable running code, we provide example notebooks demonstrating other evaluation techniques:
 
-- [LLM-Based Critique (Bedrock and fmeval).ipynb](LLM-Based%20Critique%20(Bedrock%20and%20fmeval).ipynb) demonstrates LLM self-evaluation for a supervised, in-context question answering use-case, using models on Amazon Bedrock and orchestrating the process via the [open-source `fmeval` library](https://github.com/aws/fmeval).
-- [LLM-Based Critique (SageMaker and Claude).ipynb](LLM-Based%20Critique%20(SageMaker%20and%20Claude).ipynb) shows LLM-based evaluation for a weakly-supervised, text summarization use-case, using Anthropic Claude on Amazon Bedrock to evaluate open-source models deployed on SageMaker.
+- [LLM-Based Critique (Bedrock and fmeval).ipynb](LLM-Based%20Critique%20(Bedrock%20and%20fmeval).ipynb) demonstrates LLM-judged evaluation for a supervised, in-context question answering use-case, using models on Amazon Bedrock and orchestrating the process via the [open-source `fmeval` library](https://github.com/aws/fmeval).
+- [LLM-Based Critique (SageMaker and Claude).ipynb](LLM-Based%20Critique%20(SageMaker%20and%20Claude).ipynb) shows LLM-judged evaluation for a weakly-supervised, text summarization use-case, using Anthropic Claude on Amazon Bedrock to evaluate open-source models deployed on SageMaker.
+- [RAG (Bedrock and Ragas).ipynb](RAG%20(Bedrock%20and%20Ragas).ipynb) explores how the open-source [Ragas](https://docs.ragas.io/en/latest/) framework can be used to test integrated Retrieval-Augmented-Generation (RAG) flows with a suite of specialized, LLM-judged evaluation metrics.
+- [Conversational Tests.ipynb](conversational-tests/Conversational%20Tests.ipynb) shows how the open-source [agent-evaluation framework](https://awslabs.github.io/agent-evaluation/) can be used to automate testing integrated LLM-based agents/applications against a suite of example customer journeys.
 
 These notebooks have been tested on Amazon SageMaker Studio.
 
