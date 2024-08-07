@@ -64,8 +64,12 @@ class StudioDomainResourceProperties:
 
     DomainName : str
         The name of the SageMaker Studio Domain to create
+    DefaultSpaceSettings : Optional[dict]
+        The SageMaker CreateDomain DefaultSpaceSettings to apply, if any
     DefaultUserSettings : Optional[dict]
         The SageMaker CreateDomain DefaultUserSettings to apply, if any
+    DomainSettings : Optional[dict]
+        The SageMaker CreateDomain DomainSettings to apply, if any
     EnableProjects : Optional[bool]
         Whether to enable SageMaker Projects on the created domain. Default: True.
     ProposeAdminSubnet : Optional[bool]
@@ -84,8 +88,10 @@ class StudioDomainResourceProperties:
         Default VPC (if one exists) or else the first VPC returned by `ec2:DescribeVpcs`.
     """
 
+    default_space_settings: dict
     default_user_settings: dict
     domain_name: str
+    domain_setings: dict
     enable_projects: bool
     propose_admin_subnet: bool
     subnet_ids: Optional[List[str]]
@@ -94,8 +100,14 @@ class StudioDomainResourceProperties:
 
     def __init__(self, resource_properties: dict):
         """Parse resource properties from CloudFormation-provided dict"""
+        self.default_space_settings = resource_properties.get("DefaultSpaceSettings", {})
         self.default_user_settings = resource_properties.get("DefaultUserSettings", {})
+        if self.default_user_settings.get("ExecutionRole") and not self.default_space_settings.get("ExecutionRole"):
+            self.default_space_settings["ExecutionRole"] = self.default_user_settings["ExecutionRole"]
+        elif self.default_space_settings.get("ExecutionRole") and not self.default_user_settings.get("ExecutionRole"):
+            self.default_user_settings["ExecutionRole"] = self.default_space_settings["ExecutionRole"]
         self.domain_name = resource_properties["DomainName"]
+        self.domain_settings = resource_properties.get("DomainSettings", {})
         self.enable_projects = parse_cfn_boolean(
             resource_properties.get("EnableProjects", True), "EnableProjects"
         )
@@ -117,7 +129,9 @@ class StudioDomainResourceProperties:
     def __str__(self):
         dict_val = {
             "DomainName": self.domain_name,
+            "DefaultSpaceSettings": self.default_space_settings,
             "DefaultUserSettings": self.default_user_settings,
+            "DomainSettings": self.domain_settings,
             "EnableProjects": self.enable_projects,
             "ProposeAdminSubnet": self.propose_admin_subnet,
             "UseVpcNetworking": self.use_vpc_networking,
@@ -196,9 +210,9 @@ def handle_delete(event: CustomResourceEvent[StudioDomainResourceProperties], co
 
 def handle_update(event: CustomResourceEvent[StudioDomainResourceProperties], context):
     logger.info("**Received update event")
-    default_user_settings = event.props.default_user_settings
+    update_domain_args = preprocess_update_domain_args(new_props=event.props, old_props=event.old_props)
     logger.info("**Updating studio domain")
-    update_domain(event.physical_id, default_user_settings)
+    update_domain(event.physical_id, **update_domain_args)
 
     if event.props.enable_projects and not event.old_props.enable_projects:
         smclient.enable_sagemaker_servicecatalog_portfolio()
@@ -207,8 +221,10 @@ def handle_update(event: CustomResourceEvent[StudioDomainResourceProperties], co
 
 
 def preprocess_create_domain_args(config: StudioDomainResourceProperties):
+    default_space_settings = config.default_space_settings
     default_user_settings = config.default_user_settings
     domain_name = config.domain_name
+    domain_settings = config.domain_settings
     vpc_id = config.vpc_id
     subnet_ids = config.subnet_ids
     network_mode = "VpcOnly" if config.use_vpc_networking else "PublicInternetOnly"
@@ -258,10 +274,36 @@ def preprocess_create_domain_args(config: StudioDomainResourceProperties):
         "AppNetworkAccessType": network_mode,
         "DomainName": domain_name,
         "AuthMode": "IAM",
+        "DefaultSpaceSettings": default_space_settings,
         "DefaultUserSettings": default_user_settings,
+        "DomainSettings": domain_settings,
         "SubnetIds": subnet_ids,
         "VpcId": vpc_id,
     }
+
+
+def preprocess_update_domain_args(new_props: StudioDomainResourceProperties, old_props: StudioDomainResourceProperties):
+    update_args = {
+        # TODO: AppSecurityGroupManagement not yet supported for update
+        "DefaultSpaceSettings": new_props.default_space_settings,
+        "DefaultUserSettings": new_props.default_user_settings,
+        # TODO: SubnetIds not yet supported for update
+    }
+    if new_props.use_vpc_networking != old_props.use_vpc_networking:
+        update_args["AppNetworkAccessType"] = (
+            "VpcOnly" if new_props.use_vpc_networking else "PublicInternetOnly"
+        )
+    if new_props.domain_settings:
+        old_settings = old_props.domain_settings or {}
+        domain_updates = {}
+        for key, new_value in new_props.domain_settings.items():
+            changed = new_value != old_settings.get(key)
+            update_key = "RStudioServerProDomainSettingsForUpdate" if key == "RStudioServerProDomainSettings" else key
+            if changed:
+                domain_updates[update_key] = new_value
+        update_args["DomainSettingsForUpdate"] = domain_updates
+
+    return update_args
 
 
 def post_domain_create(domain_id: str, enable_projects=False, propose_admin_subnet=False):
@@ -317,11 +359,11 @@ def delete_domain(domain_id: str):
     return response
 
 
-def update_domain(domain_id: str, default_user_settings):
+def update_domain(domain_id: str, **update_domain_kwargs):
     retry_if_already_updating(
         lambda: smclient.update_domain(
             DomainId=domain_id,
-            DefaultUserSettings=default_user_settings,
+            **update_domain_kwargs
         ),
     )
     updated = False

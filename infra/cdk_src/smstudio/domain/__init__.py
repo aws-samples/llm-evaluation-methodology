@@ -173,7 +173,9 @@ class SageMakerStudioDomain(CustomResource):
         scope: Construct,
         id: str,
         *,
+        default_space_settings: Optional[dict] = None,
         default_user_settings: Optional[dict] = None,
+        enable_docker_access: bool = True,
         enable_projects: bool = True,
         name: Optional[str] = None,
         propose_admin_subnet: bool = False,
@@ -189,8 +191,12 @@ class SageMakerStudioDomain(CustomResource):
 
         Parameters
         ----------
+        default_space_settings :
+            Dictionary as per SageMaker CreateDomain/UpdateDomain API
         default_user_settings :
             Dictionary as per SageMaker CreateDomain/UpdateDomain API
+        enable_docker_access :
+            Enable docker access within Studio (Does not *install* docker by itself)
         name :
             Name for the SageMaker Studio Domain to create (must be unique in account+region)
         propose_admin_subnet :
@@ -216,10 +222,17 @@ class SageMakerStudioDomain(CustomResource):
         self._propose_admin_subnet = propose_admin_subnet
         resource_props = {
             "DomainName": name,
+            "DomainSettings": {
+                "DockerSettings": {
+                    "EnableDockerAccess": "ENABLED" if enable_docker_access else "DISABLED",
+                },
+            },
             "AppNetworkAccessType": "VpcOnly" if use_vpc_internet else "PublicInternetOnly",
             "EnableProjects": enable_projects,
             "ProposeAdminSubnet": propose_admin_subnet,
         }
+        if default_space_settings:
+            resource_props["DefaultSpaceSettings"] = default_space_settings
         if default_user_settings:
             resource_props["DefaultUserSettings"] = default_user_settings
         if subnet_ids:
