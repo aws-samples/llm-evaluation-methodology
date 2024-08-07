@@ -42,6 +42,7 @@ class WorkshopSageMakerEnvironment(Construct):
         code_repo: Optional[str] = None,
         create_nbi: bool = True,
         create_service_roles: bool = False,
+        domain_name: Optional[str] = None,
         enable_sm_projects: bool = True,
         execution_role: Optional[aws_iam.IRole] = None,
         instance_type: str = "ml.t3.medium",
@@ -70,6 +71,8 @@ class WorkshopSageMakerEnvironment(Construct):
         create_service_roles :
             Set `True` to create required AWS Service Roles for Amazon SageMaker Projects - which
             may fail to deploy if your AWS Account already contains them.
+        domain_name :
+            Optional name for the SageMaker Studio Domain (otherwise a default name will be used)
         enable_sm_projects :
             Set `True` to enable SageMaker Projects (which requires `create_service_roles` to be
             set or for the related AWS Service Roles to already exsit in the target account) for
@@ -117,7 +120,8 @@ class WorkshopSageMakerEnvironment(Construct):
         studio_domain = SageMakerStudioDomain(
             self,
             "StudioDomain",
-            name="WorkshopDomain",  # TODO: Enable auto-select
+            # TODO: Proper automatic default e.g. with Lazy.string?
+            name=domain_name or "WorkshopDomain",
             default_user_settings=domain_user_settings,
             enable_projects=enable_sm_projects,
             smcr_helper_layer=smcr_helper_layer,
