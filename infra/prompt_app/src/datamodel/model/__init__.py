@@ -47,6 +47,14 @@ MODELS: Tuple[Tuple[BaseModelConfig, Tuple[BaseInferenceConfig]]] = tuple(
             BedrockModelConfig(model_id="anthropic.claude-3-sonnet-20240229-v1:0"),
             (dflt_claude3_ifconfig,),
         ),
+        (
+            BedrockModelConfig(model_id="anthropic.claude-3-5-sonnet-20240620-v1:0"),
+            (dflt_claude3_ifconfig,),
+        ),
+        (
+            BedrockModelConfig(model_id="anthropic.claude-3-opus-20240229-v1:0"),
+            (dflt_claude3_ifconfig,),
+        ),
         (BedrockModelConfig(model_id="anthropic.claude-v2:1"), (dflt_claude_ifconfig,)),
         (BedrockModelConfig(model_id="anthropic.claude-v2"), (dflt_claude_ifconfig,)),
         (BedrockModelConfig(model_id="anthropic.claude-instant-v1"), (dflt_claude_ifconfig,)),
@@ -64,6 +72,9 @@ MODELS: Tuple[Tuple[BaseModelConfig, Tuple[BaseInferenceConfig]]] = tuple(
         # (BedrockModelConfig(model_id="meta.llama2-70b-chat-v1"), (dflt_llama_ifconfig,)),
         # (BedrockModelConfig(model_id="meta.llama2-13b-chat-v1"), (dflt_llama_ifconfig,)),
         (ChatGPTModelConfig(api_key_secret="openai_key"), (dflt_openai_ifconfig,)),
+        (ChatGPTModelConfig(api_key_secret="openai_key", model_id="gpt-4"), (dflt_openai_ifconfig,)),
+        (ChatGPTModelConfig(api_key_secret="openai_key", model_id="gpt-4o-mini"), (dflt_openai_ifconfig,)),
+        (ChatGPTModelConfig(api_key_secret="openai_key", model_id="gpt-4o"), (dflt_openai_ifconfig,)),
     ]
 )
 
