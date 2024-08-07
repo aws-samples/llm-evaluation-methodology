@@ -1,6 +1,8 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
-"""CDK construct for a SageMaker Studio domain for demos and workshops
+"""Constructs relating to AWS Service-Linked Roles
+
+https://docs.aws.amazon.com/IAM/latest/UserGuide/using-service-linked-roles.html
 """
 
 # External Dependencies:
@@ -27,7 +29,7 @@ class SageMakerServiceRoles(Construct):
     AmazonSageMakerServiceCatalogProductsGlueRole: aws_iam.IRole
     AmazonSageMakerServiceCatalogProductsLambdaRole: aws_iam.IRole
     AmazonSageMakerServiceCatalogProductsLaunchRole: aws_iam.IRole
-    AmazonSageMakerServiceCatalogProductsUsePolicy: aws_iam.IRole
+    AmazonSageMakerServiceCatalogProductsUsePolicy: aws_iam.IManagedPolicy
     AmazonSageMakerServiceCatalogProductsUseRole: aws_iam.IRole
 
     def __init__(
