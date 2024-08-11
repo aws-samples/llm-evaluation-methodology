@@ -12,7 +12,7 @@ import aws_cdk as cdk
 from cdk_nag import AwsSolutionsChecks  # (Optional stack security checks)
 
 # Local Dependencies:
-from cdk_src.cdk_stack import LLMEValWKshpStack
+from cdk_src.cdk_stack import LLMEvalWkshpStack
 from cdk_src.config_utils import bool_env_var
 
 # Top-level configurations are loaded from environment variables at the point `cdk synth` or
@@ -31,9 +31,9 @@ config = {
 
 app = cdk.App()
 print(f"Preparing stack with configuration:\n{json.dumps(config, indent=2)}")
-llm_eval_wkshp_stack = LLMEValWKshpStack(
+llm_eval_wkshp_stack = LLMEvalWkshpStack(
     app,
-    "LLMEValWKshpStack",
+    "LLMEvalWkshpStack",
     **{k: v for k, v in config.items() if k != "cdk_nag"},
 )
 

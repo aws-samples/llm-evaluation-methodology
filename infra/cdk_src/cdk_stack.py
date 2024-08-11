@@ -14,7 +14,7 @@ from .prompt_app import PromptEngineeringApp
 from .smstudio import WorkshopSageMakerEnvironment
 
 
-class LLMEValWKshpStack(Stack):
+class LLMEvalWkshpStack(Stack):
     def __init__(
         self,
         scope: Construct,
