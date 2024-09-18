@@ -2,30 +2,33 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
 Description: |-
-  Quick-start CloudFormation template to deploy the CDK-based workshop infrastructure sample via
-  AWS CodeBuild - with no local CDK/Docker/Python/etc developer setup required.
+  Quick-start CloudFormation template to deploy the CDK-based workshop/demo infrastructure sample
+  via AWS CodeBuild - with no local CDK/Docker/Python/etc developer setup required.
 
-  This stack sets up a CodeBuild Project to deploy the main solution and triggers the build once
-  (via AWS Lambda) on stack create, plus again whenever the CodeBuildTrigger resource is updated.
-  On deletion, it triggers another CodeBuild job to attempt to destroy the CDK stack. Grants broad
-  permissions to CodeBuild - not recommended for use in production environments.
+  This stack sets up an AWS CodeBuild Project to deploy the main solution and triggers the build
+  once (via AWS Lambda) on stack create, plus again whenever the CodeBuildTrigger resource is
+  updated. On deletion, it triggers another CodeBuild job to attempt to destroy the CDK stack.
+  Grants broad permissions to CodeBuild - not recommended for use in production environments.
 
 Parameters:
-  # TODO: Would be nice to support https:// S3 zip URLs here rather than only git repositories
   CodeRepo:
     Type: String
     Default: https://github.com/aws-samples/llm-evaluation-methodology
-    Description: URL of the public git repository to use.
+    Description: >-
+      The CDK code to be deployed: A git clone-able URL, public .zip archive URL, or s3:// URI to a
+      zip archive.
 
   CodeRepoBranch:
     Type: String
     Default: main
-    Description: Branch (or commit hash) of the repository to deploy from.
+    Description: >-
+      Branch (or commit hash) of the repository to deploy from. Ignored if CodeRepo is not a git URL
 
+  # Solution-specific parameters:
   DeployPromptApp:
     Type: String
     Default: Yes
-    Description: |-
+    Description: >-
       Set 'Yes' to enable deployment of the prompt engineering front-end app used by the workshop,
       or 'No' to omit/remove this component. (Default 'Yes')
     AllowedValues:
@@ -35,7 +38,7 @@ Parameters:
   DeploySageMakerDomain:
     Type: String
     Default: Yes
-    Description: |-
+    Description: >-
       Set 'Yes' to enable deployment of a SageMaker Studio Domain to use for SageMaker-based labs
       in the workshop, or 'No' if you'd like to use an existing domain instead. (Default 'Yes')
     AllowedValues:
@@ -45,6 +48,12 @@ Parameters:
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
+      - Label:
+          default: Source Code
+        Parameters:
+          - CodeRepo
+          - CodeRepoBranch
+      # Solution-specific parameters:
       - Label:
           default: Components
         Parameters:
@@ -113,6 +122,7 @@ Resources:
       Environment:
         ComputeType: BUILD_GENERAL1_MEDIUM
         EnvironmentVariables:
+          # Pass CFn stack parameters through to the deploy job:
           - Name: PUBLIC_REPO
             Type: PLAINTEXT
             Value: !Ref CodeRepo
@@ -152,8 +162,36 @@ Resources:
             build:
               commands:
                 - set -ex
-                - git clone --single-branch -b $PUBLIC_REPO_BRANCH --depth 1 $PUBLIC_REPO code
-                - cd code/infra
+                # Fetch the source code via either S3 CLI, curl (if PUBLIC_REPO ends with '.zip')
+                # or else git:
+                - |
+                  case "$PUBLIC_REPO" in
+                    s3://*)
+                      aws s3 cp "$PUBLIC_REPO" code.zip && unzip -oq code.zip -d code
+                      export PUBLIC_REPO_IS_ARCHIVE=true
+                      ;;
+                    *.zip)
+                      curl "$PUBLIC_REPO" -o code.zip && unzip -oq code.zip -d code
+                      export PUBLIC_REPO_IS_ARCHIVE=true
+                      ;;
+                    *)
+                      git clone --single-branch -b $PUBLIC_REPO_BRANCH --depth 1 $PUBLIC_REPO code
+                      export PUBLIC_REPO_IS_ARCHIVE=false
+                      ;;
+                  esac
+                - cd code
+                # Handle potential folder nesting if source code was extracted from a zip/archive:
+                - |
+                  if [ "$PUBLIC_REPO_IS_ARCHIVE" = "true" ]; then
+                    N_EXTRACTED_SUBFOLDERS="$(find . -type d -mindepth 1 -maxdepth 1 | wc -l)"
+                    N_EXTRACTED_SUBFILES="$(find . -type f -mindepth 1 -maxdepth 1 | wc -l)"
+                    if [ \( $N_EXTRACTED_SUBFOLDERS -eq "1" \) -a \( $N_EXTRACTED_SUBFILES -eq "0" \) ]; then
+                      echo "Zip extracted one top-level folder. Treating that as code root"
+                      cd "$(ls -d */|head -n 1)"
+                    fi
+                  fi
+                # Actual deploy/destroy instructions for this repository:
+                - cd infra
                 - npm install
                 - pip3 install -r requirements.txt
                 - npm run cdk:bootstrap
