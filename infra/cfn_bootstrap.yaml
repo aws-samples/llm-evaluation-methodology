@@ -120,7 +120,7 @@ Resources:
       ConcurrentBuildLimit: 1
       Description: "CDK stack deployer"
       Environment:
-        ComputeType: BUILD_GENERAL1_MEDIUM
+        ComputeType: BUILD_GENERAL1_LARGE
         EnvironmentVariables:
           # Pass CFn stack parameters through to the deploy job:
           - Name: PUBLIC_REPO
