@@ -1,6 +1,6 @@
 general:
-  name: "llmevalworkshop"
-  model_name: "llama-mistral"
+  name: "llmevalworkshop-llama"
+  model_name: "llama3"
 
 # AWS and SageMaker settings
 aws:

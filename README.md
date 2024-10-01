@@ -80,7 +80,7 @@ Maturing your organization's Generative AI / LLM evaluation strategy is an itera
 
 ### Data-driven prompt template engineering
 
-Once your `LLMEValWKshpStack` stack has created successfully [in AWS CloudFormation](https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/), select it from the list and click through to the *Outputs* tab where you should see:
+Once your `LLMEvalWkshpStack` stack has created successfully [in AWS CloudFormation](https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/), select it from the list and click through to the *Outputs* tab where you should see:
 
 - An `AppDomainName` output with a hyperlink like [***.cloudfront.net]()
 - `AppDemoUsername` and `AppDemoPassword` outputs listing the credentials you can use to log in
@@ -112,6 +112,18 @@ For users who are familiar with Python and comfortable running code, we provide 
 - [Conversational Tests.ipynb](conversational-tests/Conversational%20Tests.ipynb) shows how the open-source [agent-evaluation framework](https://awslabs.github.io/agent-evaluation/) can be used to automate testing integrated LLM-based agents/applications against a suite of example customer journeys.
 
 These notebooks have been tested on Amazon SageMaker Studio.
+
+
+## Clean-up
+
+Once you're done experimenting, you can delete the deployed stacks from the [CloudFormation Console](https://console.aws.amazon.com/cloudformation/home?#/stacks).
+
+You may need to manually delete the container image(s) from your `sm-fmbench` repository in the [Amazon ECR Console](https://console.aws.amazon.com/ecr/repositories/) for the `LLMPerfTestStack` stack to delete successfully.
+
+⚠️ **Note** that some of the lab exercises / notebooks may ask you to manually create additional resources, which you will also need to manually delete to avoid ongoing charges. In particular:
+
+1. Delete any [SageMaker Endpoints](https://console.aws.amazon.com/sagemaker/home?#/endpoints) you may have deployed for testing Mistral and Llama models in workshop lab 1
+2. Delete the [Bedrock Knowledge Base](https://console.aws.amazon.com/bedrock/home?#/knowledge-bases) you may have deployed for exploring RAG and end-to-end testing
 
 
 ## Further reading and tools

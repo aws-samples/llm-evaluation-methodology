@@ -1,9 +1,11 @@
-# Use the Amazon Linux 2023 image
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+# Build from Amazon Linux 2023 image:
 FROM public.ecr.aws/amazonlinux/amazonlinux:latest
 
 ENV PYTHONUNBUFFERED=1
 
-# Install necessary packages
+# Install necessary OS-level packages
 RUN yum install -y --skip-broken wget jq aws-cli bzip2 ca-certificates curl git gcc gcc-c++ make openssl-devel libffi-devel zlib-devel && \
     yum clean all
 
