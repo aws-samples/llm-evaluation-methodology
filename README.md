@@ -1,8 +1,10 @@
 # Evaluate and compare Large Language Models (LLMs) on AWS
 
-As more organizations look to push Generative AI use-cases from initial prototype to production deployment, rigorous testing and evaluation is important to demonstrate robustness, optimize cost, and maximize quality - both before and after initial go-live.
+Whether you're evaluating a Generative AI prototype, launching to production, or maintaining a live system - rigorous but efficient testing is vital to demonstrate robustness, optimize cost, and maximize quality.
 
-This repository collects some code samples and deployable components that can help you efficiently evaluate and optimize LLM performance - including how to automate testing to evaluate new models and prompt templates faster.
+This repository collects some code samples and deployable components that can help you efficiently evaluate and optimize the performance of LLM-enabled applications - including how to automate testing to evaluate new models and prompt templates faster.
+
+🎓 You can also check out the **[accompanying guided workshop](https://catalog.workshops.aws/workshops/ab6c96d3-53cf-4730-b0fe-f4762dbbb6eb)** for step-by-step walkthroughs and additional information.
 
 
 ## LLM evaluation overview
