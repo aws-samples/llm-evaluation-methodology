@@ -35,6 +35,7 @@ This repository collects some code samples and deployable components that can he
 To help get your evaluation strategy up and running, this repository includes:
 
 - A prompt engineering sample app you can deploy in your AWS Account in a region where [Amazon Bedrock](https://aws.amazon.com/bedrock/) is available.
+- A deployable [SageMaker Pipeline](https://docs.aws.amazon.com/sagemaker/latest/dg/pipelines-sdk.html) with example configurations for running latency/cost performance tests using [FMBench](https://github.com/aws-samples/foundation-model-benchmarking-tool).
 - Some sample notebooks you'll want to run in an [Amazon SageMaker Studio Domain](https://docs.aws.amazon.com/sagemaker/latest/dg/gs-studio-onboard.html) - ideally in the same region for smoothest experience.
 
 ▶️ **The simplest way to set up** is by deploying our S3-hosted AWS CloudFormation template (⚠️ Check the *AWS Region* after following the below link, and switch if needed):

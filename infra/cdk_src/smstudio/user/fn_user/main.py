@@ -116,7 +116,7 @@ def handle_update(event: CustomResourceEvent[StudioUserResourceProperties], cont
     update_user_profile(
         domain_id=event.props.domain_id,
         user_profile_name=event.physical_id,
-        user_settings=event.props.user_settings
+        user_settings=event.props.user_settings,
     )
     return {"PhysicalResourceId": event.physical_id, "Data": {}}
 

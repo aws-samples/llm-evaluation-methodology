@@ -102,10 +102,18 @@ class StudioDomainResourceProperties:
         """Parse resource properties from CloudFormation-provided dict"""
         self.default_space_settings = resource_properties.get("DefaultSpaceSettings", {})
         self.default_user_settings = resource_properties.get("DefaultUserSettings", {})
-        if self.default_user_settings.get("ExecutionRole") and not self.default_space_settings.get("ExecutionRole"):
-            self.default_space_settings["ExecutionRole"] = self.default_user_settings["ExecutionRole"]
-        elif self.default_space_settings.get("ExecutionRole") and not self.default_user_settings.get("ExecutionRole"):
-            self.default_user_settings["ExecutionRole"] = self.default_space_settings["ExecutionRole"]
+        if self.default_user_settings.get("ExecutionRole") and not self.default_space_settings.get(
+            "ExecutionRole"
+        ):
+            self.default_space_settings["ExecutionRole"] = self.default_user_settings[
+                "ExecutionRole"
+            ]
+        elif self.default_space_settings.get(
+            "ExecutionRole"
+        ) and not self.default_user_settings.get("ExecutionRole"):
+            self.default_user_settings["ExecutionRole"] = self.default_space_settings[
+                "ExecutionRole"
+            ]
         self.domain_name = resource_properties["DomainName"]
         self.domain_settings = resource_properties.get("DomainSettings", {})
         self.enable_projects = parse_cfn_boolean(
@@ -210,7 +218,9 @@ def handle_delete(event: CustomResourceEvent[StudioDomainResourceProperties], co
 
 def handle_update(event: CustomResourceEvent[StudioDomainResourceProperties], context):
     logger.info("**Received update event")
-    update_domain_args = preprocess_update_domain_args(new_props=event.props, old_props=event.old_props)
+    update_domain_args = preprocess_update_domain_args(
+        new_props=event.props, old_props=event.old_props
+    )
     logger.info("**Updating studio domain")
     update_domain(event.physical_id, **update_domain_args)
 
@@ -282,7 +292,9 @@ def preprocess_create_domain_args(config: StudioDomainResourceProperties):
     }
 
 
-def preprocess_update_domain_args(new_props: StudioDomainResourceProperties, old_props: StudioDomainResourceProperties):
+def preprocess_update_domain_args(
+    new_props: StudioDomainResourceProperties, old_props: StudioDomainResourceProperties
+):
     update_args = {
         # TODO: AppSecurityGroupManagement not yet supported for update
         "DefaultSpaceSettings": new_props.default_space_settings,
@@ -298,7 +310,11 @@ def preprocess_update_domain_args(new_props: StudioDomainResourceProperties, old
         domain_updates = {}
         for key, new_value in new_props.domain_settings.items():
             changed = new_value != old_settings.get(key)
-            update_key = "RStudioServerProDomainSettingsForUpdate" if key == "RStudioServerProDomainSettings" else key
+            update_key = (
+                "RStudioServerProDomainSettingsForUpdate"
+                if key == "RStudioServerProDomainSettings"
+                else key
+            )
             if changed:
                 domain_updates[update_key] = new_value
         update_args["DomainSettingsForUpdate"] = domain_updates
@@ -361,10 +377,7 @@ def delete_domain(domain_id: str):
 
 def update_domain(domain_id: str, **update_domain_kwargs):
     retry_if_already_updating(
-        lambda: smclient.update_domain(
-            DomainId=domain_id,
-            **update_domain_kwargs
-        ),
+        lambda: smclient.update_domain(DomainId=domain_id, **update_domain_kwargs),
     )
     updated = False
     time.sleep(0.5)
