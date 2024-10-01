@@ -25,6 +25,16 @@ Parameters:
       Branch (or commit hash) of the repository to deploy from. Ignored if CodeRepo is not a git URL
 
   # Solution-specific parameters:
+  DeployPerfTestPipeline:
+    Type: String
+    Default: Yes
+    Description: >-
+      Set 'Yes' to enable deployment of the example SageMaker pipeline for LLM latency/throughput,
+      or 'No' to omit/remove this component. (Default 'Yes')
+    AllowedValues:
+      - Yes
+      - No
+
   DeployPromptApp:
     Type: String
     Default: Yes
@@ -57,6 +67,7 @@ Metadata:
       - Label:
           default: Components
         Parameters:
+          - DeployPerfTestPipeline
           - DeployPromptApp
           - DeploySageMakerDomain
 
@@ -129,6 +140,9 @@ Resources:
           - Name: PUBLIC_REPO_BRANCH
             Type: PLAINTEXT
             Value: !Ref CodeRepoBranch
+          - Name: DEPLOY_PERF_TEST_PIPELINE
+            Type: PLAINTEXT
+            Value: !Ref DeployPerfTestPipeline
           - Name: DEPLOY_PROMPT_APP
             Type: PLAINTEXT
             Value: !Ref DeployPromptApp

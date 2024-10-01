@@ -72,9 +72,18 @@ MODELS: Tuple[Tuple[BaseModelConfig, Tuple[BaseInferenceConfig]]] = tuple(
         # (BedrockModelConfig(model_id="meta.llama2-70b-chat-v1"), (dflt_llama_ifconfig,)),
         # (BedrockModelConfig(model_id="meta.llama2-13b-chat-v1"), (dflt_llama_ifconfig,)),
         (ChatGPTModelConfig(api_key_secret="openai_key"), (dflt_openai_ifconfig,)),
-        (ChatGPTModelConfig(api_key_secret="openai_key", model_id="gpt-4"), (dflt_openai_ifconfig,)),
-        (ChatGPTModelConfig(api_key_secret="openai_key", model_id="gpt-4o-mini"), (dflt_openai_ifconfig,)),
-        (ChatGPTModelConfig(api_key_secret="openai_key", model_id="gpt-4o"), (dflt_openai_ifconfig,)),
+        (
+            ChatGPTModelConfig(api_key_secret="openai_key", model_id="gpt-4"),
+            (dflt_openai_ifconfig,),
+        ),
+        (
+            ChatGPTModelConfig(api_key_secret="openai_key", model_id="gpt-4o-mini"),
+            (dflt_openai_ifconfig,),
+        ),
+        (
+            ChatGPTModelConfig(api_key_secret="openai_key", model_id="gpt-4o"),
+            (dflt_openai_ifconfig,),
+        ),
     ]
 )
 

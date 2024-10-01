@@ -3,8 +3,13 @@
 # >=2.140 to try and avoid 'Package @aws-sdk/client-cognito-identity-provider does not exist.' on
 # AwsCustomResource (this version includes fix for related failure to upgrade AWS SDK)
 # See: https://github.com/aws/aws-cdk/issues/30067
-aws-cdk-lib==2.140.0
-aws-cdk.aws-lambda-python-alpha==2.140.0-alpha.0
+aws-cdk-lib==2.158.0
+aws-cdk.aws-lambda-python-alpha==2.158.0-alpha.0
 cdk-nag==2.28
 constructs>=10.0.0,<11.0.0
 upsert-slr>=1.0.2,<2
+# Avoid 3.0.100 for https://github.com/cdklabs/cdk-ecr-deployment/issues/478
+cdk-ecr-deployment>=3,!=3.0.7,!=3.0.24,!=3.0.58,!=3.0.67,!=3.0.75,<3.0.100
+sagemaker
+# Temporary setuptools dep due to: https://github.com/aws/sagemaker-python-sdk/issues/4534
+setuptools

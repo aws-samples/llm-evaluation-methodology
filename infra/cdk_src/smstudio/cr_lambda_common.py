@@ -29,9 +29,8 @@ class SMCustomResourceHelperLayer(PythonLayerVersion):
         bundling: BundlingOptions | Dict[str, Any] | None = None,
         compatible_architectures: Sequence[Architecture] | None = None,
         compatible_runtimes: Sequence[Runtime] | None = None,
-        description: str | None = (
-            "Helper functions & classes for SageMaker CloudFormation custom resources"
-        ),
+        description: str
+        | None = ("Helper functions & classes for SageMaker CloudFormation custom resources"),
         layer_version_name: str | None = None,
         license: str | None = None,
         removal_policy: RemovalPolicy | None = None,
