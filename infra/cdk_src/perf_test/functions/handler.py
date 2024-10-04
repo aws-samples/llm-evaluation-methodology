@@ -32,11 +32,16 @@ def replicate(bucket):
     for idx, record in enumerate(records):
         name = record["Name"]
         print(f"Copying {idx+1}/{n}: {name}")
-        s3.copy_object(
-            CopySource={"Bucket": record["Bucket"], "Key": record["Key"]},
-            Bucket=bucket,
-            Key=record["Name"],
-        )
+        try:
+            s3.copy_object(
+                CopySource={"Bucket": record["Bucket"], "Key": record["Key"]},
+                Bucket=bucket,
+                Key=name,
+            )
+        except:
+            # Log but ignore errors (sometimes missing config files have been included in FMBench
+            # manifests in the past):
+            print(f"ERROR copying s3://{record['Bucket']}/{record['Key']}")
 
 
 def get_physical_id(bucket_name) -> str:
