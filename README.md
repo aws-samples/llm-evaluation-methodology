@@ -108,6 +108,7 @@ To customize and re-deploy this app, or run the container locally, see the docum
 
 For users who are familiar with Python and comfortable running code, we provide example notebooks demonstrating other evaluation techniques:
 
+- [Latency and Cost.ipynb](Latency%20and%20Cost.ipynb) shows open-source tools (including [LLMeter](https://github.com/awslabs/llmeter#readme) and [FMBench](https://github.com/aws-samples/foundation-model-benchmarking-tool#readme)) that you can use to profile the latency, throughput, and therefore cost-to-serve of various LLMs and deployment types.
 - [LLM-Based Critique (Bedrock and fmeval).ipynb](LLM-Based%20Critique%20(Bedrock%20and%20fmeval).ipynb) demonstrates LLM-judged evaluation for a supervised, in-context question answering use-case, using models on Amazon Bedrock and orchestrating the process via the [open-source `fmeval` library](https://github.com/aws/fmeval).
 - [LLM-Based Critique (SageMaker and Claude).ipynb](LLM-Based%20Critique%20(SageMaker%20and%20Claude).ipynb) shows LLM-judged evaluation for a weakly-supervised, text summarization use-case, using Anthropic Claude on Amazon Bedrock to evaluate open-source models deployed on SageMaker.
 - [RAG (Bedrock and Ragas).ipynb](RAG%20(Bedrock%20and%20Ragas).ipynb) explores how the open-source [Ragas](https://docs.ragas.io/en/latest/) framework can be used to test integrated Retrieval-Augmented-Generation (RAG) flows with a suite of specialized, LLM-judged evaluation metrics.
@@ -126,11 +127,6 @@ You may need to manually delete the container image(s) from your `sm-fmbench` re
 
 1. Delete any [SageMaker Endpoints](https://console.aws.amazon.com/sagemaker/home?#/endpoints) you may have deployed for testing Mistral and Llama models in workshop lab 1
 2. Delete the [Bedrock Knowledge Base](https://console.aws.amazon.com/bedrock/home?#/knowledge-bases) you may have deployed for exploring RAG and end-to-end testing
-
-
-## Further reading and tools
-
-- [FMBench](https://github.com/aws-samples/foundation-model-benchmarking-tool) is an open-source Python package from AWS that can help run performance and cost benchmarking of foundation models deployed on Amazon SageMaker and Amazon Bedrock.
 
 
 ## Security
