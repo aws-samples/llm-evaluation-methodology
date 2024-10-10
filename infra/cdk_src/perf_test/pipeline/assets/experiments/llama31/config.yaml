@@ -1,6 +1,6 @@
 general:
   name: "llmevalworkshop-llama"
-  model_name: "llama3"
+  model_name: "llama31"
 
 # AWS and SageMaker settings
 aws:
@@ -56,7 +56,7 @@ s3_read_data:
   # NOTE 1: the same tokenizer is used with all the models being tested through a config file
   # NOTE 2: place your model specific tokenizers in a prefix named as <model_name>_tokenizer
   #         so the mistral tokenizer goes in mistral_tokenizer, Llama2 tokenizer goes in llama2_tokenizer and so on and so forth.
-  tokenizer_prefix: llama3_tokenizer
+  tokenizer_prefix: llama3_1_tokenizer
 
   # S3 prefix for prompt templates
   prompt_template_dir: prompt_template
@@ -150,27 +150,27 @@ pricing: pricing.yml
 # section under experiments.
 inference_parameters:
   sagemaker:
+    do_sample: yes
     max_new_tokens: 100
     top_p: 0.92
     temperature: 0.1
     details: True
-    stop: '<|eot_id|>'
 
 # Configuration for experiments to be run. The experiments section is an array
 # so more than one experiments can be added, these could belong to the same model
 # but different instance types, or different models, or even different hosting
 # options (such as one experiment is SageMaker and the other is Bedrock).
 experiments:
-  - name: llama3-8b-instruct
+  - name: llama31-8b-instruct
     # model_id is interpreted in conjunction with the deployment_script, so if you
     # use a JumpStart model id then set the deployment_script to jumpstart.py.
     # if deploying directly from HuggingFace this would be a HuggingFace model id
     # see the DJL serving deployment script in the code repo for reference.
-    model_id: meta-textgeneration-llama-3-8b-instruct
+    model_id: meta-llama/Meta-Llama-3.1-8B-Instruct
     model_version: "*"
-    model_name: llama3-8b-instruct
-    ep_name: demo-llama-3-8b-instruct
-    instance_type: "ml.g5.2xlarge"
+    model_name: Meta-Llama-3-1-8B-Instruct
+    ep_name: demo-llama-31-8b-instruct
+    instance_type: "ml.g5.4xlarge"
     image_uri:
     deploy: no
     instance_count: 1
@@ -184,7 +184,7 @@ experiments:
     inference_spec:
       # this should match one of the sections in the inference_parameters section above
       parameter_set: sagemaker
-      stream: True
+      # stream: True
       # stop_token: ".</s>"
     # runs are done for each combination of payload file and concurrency level
     payload_files:
@@ -219,7 +219,7 @@ experiments:
 # parameters related to how the final report is generated
 report:
   # markdown report title
-  title: "Performance benchmarking results for LLama3-8b `g5.xlarge` instances"
+  title: "Performance benchmarking results for LLama3.1-8b `g5.4xlarge` instances"
   # constraints for latency, cost and error rate
   # an experiment is considered successful or eligible for
   # selection for a use-case if it satisfies all of the following
