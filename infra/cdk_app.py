@@ -35,9 +35,18 @@ app = cdk.App()
 print(f"Preparing stack with configuration:\n{json.dumps(config, indent=2)}")
 cdk_nag = config.pop("cdk_nag")
 deploy_perf_test_pipeline = config.pop("deploy_perf_test_pipeline")
-llm_eval_wkshp_stack = LLMEvalWkshpStack(app, "LLMEvalWkshpStack", **config)
+llm_eval_wkshp_stack = LLMEvalWkshpStack(
+    app,
+    "LLMEvalWkshpStack",
+    description="Main stack for LLM Evaluation workshop",
+    **config,
+)
 if deploy_perf_test_pipeline:
-    perf_test_stack = LLMPerfTestStack(app, "LLMPerfTestStack")
+    perf_test_stack = LLMPerfTestStack(
+        app,
+        "LLMPerfTestStack",
+        description="Latency & throughput testing stack for LLM Evaluation workshop",
+    )
 
 if cdk_nag:
     print("Adding cdk_nag checks")

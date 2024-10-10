@@ -23,8 +23,9 @@ class LLMEvalWkshpStack(Stack):
         deploy_sagemaker_domain: bool = True,
         sagemaker_code_checkout: Optional[str] = None,
         sagemaker_code_repo: Optional[str] = None,
+        **kwargs,
     ) -> None:
-        super().__init__(scope, construct_id)
+        super().__init__(scope, construct_id, **kwargs)
 
         if deploy_sagemaker_domain:
             # Shared VPC:
