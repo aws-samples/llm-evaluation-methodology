@@ -97,11 +97,18 @@ class StructuredBedrockModelRunner(BedrockModelRunner):
         content_template: str,
         output: Optional[str] = None,
         log_probability: Optional[str] = None,
+        embedding: Optional[str] = None,
         content_type: str = MIME_TYPE_JSON,
         accept_type: str = MIME_TYPE_JSON,
     ):
         super().__init__(
-            model_id, content_template, output, log_probability, content_type, accept_type
+            model_id=model_id,
+            content_template=content_template,
+            output=output,
+            log_probability=log_probability,
+            embedding=embedding,
+            content_type=content_type,
+            accept_type=accept_type,
         )
         logger.info("Overriding composer for BedrockModelRunner with structured messaging API")
         self._composer = StructuredContentComposer(content_template)

@@ -20,8 +20,9 @@ from fmeval.constants import DatasetColumns, MEAN
 from fmeval.data_loaders.data_config import DataConfig
 from fmeval.data_loaders.util import get_dataset
 from fmeval.eval_algorithms import EvalAlgorithm, EvalOutput, EvalScore
+from fmeval.eval_algorithms.common import evaluate_dataset
 from fmeval.eval_algorithms.eval_algorithm import EvalAlgorithmConfig, EvalAlgorithmInterface
-from fmeval.eval_algorithms.util import evaluate_dataset, get_dataset_configs, validate_dataset
+from fmeval.eval_algorithms.util import get_dataset_configs, validate_dataset
 from fmeval.exceptions import EvalAlgorithmClientError
 from fmeval.model_runners.model_runner import ModelRunner
 from fmeval.transforms.transform import Transform
