@@ -65,7 +65,7 @@ class StructuredContentComposer(Composer):
 
     def compose(self, data: str) -> Union[str, List, Dict]:
         try:
-            return json.loads(self._get_filled_in_template(data))
+            return json.loads(self._get_filled_in_template({self.placeholder: data}))
         except Exception as e:
             raise EvalAlgorithmClientError(
                 f"Unable to load a JSON object with template '{self.vanilla_template.template}' using data {data} ",

@@ -1,6 +1,8 @@
-fmeval>=1.0.3,<1.1
+# (Not yet tested with 1.3 - Pinning for reliability)
+fmeval>=1.0.3,<1.3
 # Explicit pandas v for: https://github.com/ray-project/ray/issues/42572
 # https://discuss.ray.io/t/pandas-importerror-with-ray-data-dataset-show/13486
 pandas<2.2.0
-streamlit==1.37.0
+# (Not yet tested with 1.40 but might work! Pinning for reliability)
+streamlit>=1.37.0,<1.40
 streamlit-cognito-auth>=1.3,<2
